@@ -15,7 +15,7 @@ import { useStore } from "@/core/store";
 import {
   defaultStatsFilePath,
   switchStatsFile,
-} from "@/core/dataPersistence";
+} from "@/core/statsPersistence";
 import {
   createLanguageDropdown,
   createColorModeSettings,

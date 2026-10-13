@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { useStore } from "@/core/store";
-import { mergeExternalStats } from "@/core/externalSync";
+import { mergeExternalStats } from "@/core/statsSync";
 import type { PersistedStats } from "@/defs/types";
 
 // Minimal window stub — store.requestPersist uses requestAnimationFrame.

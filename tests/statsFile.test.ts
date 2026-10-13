@@ -4,10 +4,10 @@ import {
 	defaultStatsFilePath,
 	getStatsFilePath,
 	switchStatsFile,
-	saveSettingsToDisk,
 	saveStatsToDisk,
 	checkExternalStatsFile,
-} from "@/core/dataPersistence";
+} from "@/core/statsPersistence";
+import { saveSettingsToDisk } from "@/core/settingsPersistence";
 import type { Plugin } from "obsidian";
 
 // Minimal window stub — store.requestPersist uses requestAnimationFrame.

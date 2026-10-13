@@ -1,14 +1,14 @@
 import { Notice, Plugin } from "obsidian";
 
-import { PluginData, Settings, StatsFileData } from "@/defs/types";
+import { Settings, StatsFileData } from "@/defs/types";
 import { writeFileAtomic } from "@/utils/utils";
 import { useStore } from "./store";
 import { encodePersistedStats } from "./statsCodec";
-import { mergeExternalStats } from "./externalSync";
+import { mergeExternalStats } from "./statsSync";
 import { t } from "@/ui/i18n";
 
-const JSON_SCHEMA = "1.0";
-const JSON_DEBOUNCE_TIME = 2000;
+const STATS_SCHEMA = "1.0";
+const STATS_DEBOUNCE_TIME = 2000;
 
 // ─── Stats data file paths ───
 
@@ -148,10 +148,6 @@ export async function checkExternalStatsFile(plugin: Plugin): Promise<void> {
 
 // ─── Persisted payload assembly ───
 
-export function prepareSettingsData(): PluginData {
-	return { schema: JSON_SCHEMA, settings: useStore.getState().settings };
-}
-
 export function prepareStatsData(): StatsFileData {
 	const {
 		today,
@@ -162,7 +158,7 @@ export function prepareStatsData(): StatsFileData {
 	} = useStore.getState();
 
 	return {
-		schema: JSON_SCHEMA,
+		schema: STATS_SCHEMA,
 		stats: encodePersistedStats({
 			today,
 			days,
@@ -171,18 +167,6 @@ export function prepareStatsData(): StatsFileData {
 			historicalVersion,
 		}),
 	};
-}
-
-// Last serialized settings payload — data.json must be rewritten only
-// when settings actually changed (seeded at scheduler setup).
-let lastSettingsJson = "";
-
-export async function saveSettingsToDisk(plugin: Plugin): Promise<void> {
-	const data = prepareSettingsData();
-	const json = JSON.stringify(data);
-	if (json === lastSettingsJson) return;
-	lastSettingsJson = json;
-	await plugin.saveData(data);
 }
 
 // ─── Stats file location switch ───
@@ -274,14 +258,13 @@ export async function switchStatsFile(
 // ─── Persistence scheduling ───
 
 /**
- * Holds the debounce and generation state for persistence scheduling.
+ * Holds the debounce state for the stats-file save channel.
  */
-export interface PersistenceScheduler {
+export interface StatsScheduler {
 	dispose: () => void;
 	/**
-	 * Cancel any pending debounced save and write pending state to disk
-	 * immediately (stats file, plus data.json only when a settings change
-	 * is pending).  Used by visibilitychange / pagehide handlers because
+	 * Cancel any pending debounced save and write pending stats to disk
+	 * immediately.  Used by visibilitychange / pagehide handlers because
 	 * requestAnimationFrame is paused in background tabs — without an
 	 * explicit flush, a user who types and then switches apps can lose
 	 * their last few edits to an OS kill or hard reload.
@@ -315,43 +298,31 @@ function debouncedSave(save: () => Promise<void>, delayMs: number) {
 }
 
 /**
- * Two INDEPENDENT persistence channels (subscribed AFTER boot hydration,
- * so the initial hydrate schedules nothing):
- *   - persistVersion (typing / data mutations) → stats file only;
- *   - settings slice (mutateSettings / external settings merge) →
- *     data.json.
- * Keystrokes never rewrite data.json: Obsidian's saveData is a
- * non-atomic truncate-rewrite, and the old "save both on every typing
+ * The stats save channel (subscribed AFTER boot hydration, so the initial
+ * hydrate schedules nothing): persistVersion bumps — typing / data
+ * mutations — schedule a debounced write of the stats file ONLY.
+ *
+ * Settings live in a separate channel (settingsPersistence.ts →
+ * data.json).  Keystrokes never rewrite data.json: Obsidian's saveData is
+ * a non-atomic truncate-rewrite, and the old "save both on every typing
  * burst" design could leave it truncated when the process was killed.
  */
-export function setupPersistenceScheduling(
-	plugin: Plugin,
-): PersistenceScheduler {
-	// Seed the dedup snapshot so a flush with unchanged settings can't
-	// rewrite data.json after a module (re)load.
-	lastSettingsJson = JSON.stringify(prepareSettingsData());
+export function setupStatsPersistence(plugin: Plugin): StatsScheduler {
+	const statsSave = debouncedSave(
+		() => saveStatsToDisk(plugin),
+		STATS_DEBOUNCE_TIME,
+	);
 
-	const statsSave = debouncedSave(() => saveStatsToDisk(plugin), JSON_DEBOUNCE_TIME);
-	const settingsSave = debouncedSave(() => saveSettingsToDisk(plugin), JSON_DEBOUNCE_TIME);
-
-	const unsubStats = useStore.subscribe(
+	const unsubscribe = useStore.subscribe(
 		(s) => s.persistVersion,
 		statsSave.schedule,
 	);
-	const unsubSettings = useStore.subscribe(
-		(s) => s.settings,
-		settingsSave.schedule,
-	);
 
 	return {
-		flushNow: async () => {
-			await Promise.all([statsSave.run(), settingsSave.run()]);
-		},
+		flushNow: () => statsSave.run(),
 		dispose: () => {
-			unsubStats();
-			unsubSettings();
+			unsubscribe();
 			statsSave.cancel();
-			settingsSave.cancel();
 		},
 	};
 }

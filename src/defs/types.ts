@@ -168,7 +168,7 @@ export interface Settings {
 	/**
 	 * Vault-relative path (including the file name) of the stats data file.
 	 * Empty = default location (`stats.json` next to data.json in the
-	 * plugin folder). See dataPersistence.switchStatsFile.
+	 * plugin folder). See statsPersistence.switchStatsFile.
 	 */
 	statsFileName: string;
 	startOfTheWeek: "MONDAY" | "SUNDAY"; // not used yet, should be used to offset start of the week calculations and heatmap
@@ -345,10 +345,11 @@ export const DEFAULT_SETTINGS: Settings = {
 
 /**
  * Merge settings loaded from disk (possibly missing entirely, e.g. a
- * fresh install) with the shipped defaults.
+ * fresh install) with the shipped defaults. Spreading null/undefined is
+ * a no-op, so either means "all defaults".
  */
 export function normalizeSettings(
-	saved: Partial<Settings> | undefined,
+	saved: Partial<Settings> | null | undefined,
 ): Settings {
 	return { ...DEFAULT_SETTINGS, ...saved };
 }

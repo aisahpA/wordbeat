@@ -1,8 +1,8 @@
 import { Notice, App, Plugin } from "obsidian";
-import { PluginData, Settings, StatsFileData } from "@/defs/types";
+import { Settings, StatsFileData } from "@/defs/types";
 import { formatDate } from "@/utils/dateUtils";
 import { writeFileAtomic } from "@/utils/utils";
-import { getStatsFilePath, readStatsFile } from "./dataPersistence";
+import { getStatsFilePath, readStatsFile } from "./statsPersistence";
 
 const DEFAULT_BACKUP_DAYS = 7;
 const DEFAULT_BACKUP_FOLDER = ".keep-the-rhythm2";
@@ -69,7 +69,7 @@ export async function snapshotRawDataFile(
  *     IMMEDIATELY (same invariant mergeExternalStats enforces at runtime).
  *   - File MISSING → do nothing.  It is either a genuine first run or a
  *     sync client that hasn't delivered the (custom-path) file yet; the
- *     runtime mtime poll in dataPersistence picks the real file up the
+ *     runtime mtime poll in statsPersistence picks the real file up the
  *     moment it arrives, and restoring an old backup up front could be
  *     written back with a fresh mtime and look like newer-but-stale data
  *     to other devices.
@@ -90,41 +90,6 @@ export async function loadStatsData(
 	console.warn("KTR: stats file was empty — restored from backup");
 	new Notice("Ktr: stats file was empty — restored from backup.", 0);
 	return restored;
-}
-
-// ─── data.json (settings) resilience ───
-
-function isPluginData(value: unknown): value is PluginData {
-	if (typeof value !== "object" || value === null || Array.isArray(value)) {
-		return false;
-	}
-	const settings = (value as PluginData).settings;
-	return typeof settings === "object" && settings !== null;
-}
-
-/**
- * Read and validate data.json directly.  Obsidian's loadData() returns
- * null both for a missing file AND for a truncated one (a process killed
- * during its non-atomic saveData), so callers cannot otherwise tell a
- * first run apart from a corrupt file.  Returns null when the file is
- * missing, unparseable, or structurally invalid — a corrupt file is left
- * untouched on disk (the next settings write overwrites it, and a sync
- * client may redeliver a good copy first).
- */
-export async function readValidDataJson(
-	plugin: Plugin,
-): Promise<PluginData | null> {
-	const path = `${plugin.manifest.dir}/data.json`;
-	try {
-		if (!(await plugin.app.vault.adapter.exists(path))) return null;
-		const parsed: unknown = JSON.parse(
-			await plugin.app.vault.adapter.read(path),
-		);
-		return isPluginData(parsed) ? parsed : null;
-	} catch (err) {
-		console.warn("KTR: data.json is missing or unreadable:", err);
-		return null;
-	}
 }
 
 /** Newest backup whose stats carry activity rows, or null. */

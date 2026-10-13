@@ -14,14 +14,18 @@ import { CUSTOM_CODE_BLOCK_COMMANDS } from "@/core/codeBlockTemplates";
 import {
 	snapshotRawDataFile,
 	loadStatsData,
-	readValidDataJson,
 } from "@/core/backup";
 import {
-	setupPersistenceScheduling,
-	PersistenceScheduler,
+	setupStatsPersistence,
+	StatsScheduler,
 	checkExternalStatsFile,
-} from "@/core/dataPersistence";
-import { mergeExternalSettings } from "@/core/externalSync";
+} from "@/core/statsPersistence";
+import {
+	readSettings,
+	mergeIncomingSettings,
+	setupSettingsPersistence,
+	SettingsScheduler,
+} from "@/core/settingsPersistence";
 import { normalizeSettings } from "@/defs/types";
 import { resetDailySummaryCache } from "@/utils/dailySummaryCache";
 import { resetStatsCodecCache } from "@/core/statsCodec";
@@ -30,27 +34,24 @@ import { resetFolderCache } from "@/core/pathFilter";
 
 export default class KeepTheRhythm extends Plugin {
 	
-	// Persistence scheduler with debounce state and unsubscribe handle
-	private persistenceScheduler: PersistenceScheduler | null = null;
+	// Two independent persistence channels with debounce state and
+	// unsubscribe handles (stats file / data.json respectively).
+	private statsScheduler: StatsScheduler | null = null;
+	private settingsScheduler: SettingsScheduler | null = null;
 
 	private statusBar: TodayWordsStatusBar | null = null;
 
 	async onload() {
 		setPlugin(this);
 
-		// Raw-read data.json: loadData() returns null for both a missing
-		// and a truncated file; readValidDataJson leaves a corrupt file on
-		// disk instead of silently treating it as first run. A truncated
-		// file is unlikely now that typing never writes data.json (see the
-		// two-channel note below).
-		const loadedData = await readValidDataJson(this);
-		const settings = normalizeSettings(loadedData?.settings);
+		// Missing / unreadable data.json → null → all defaults.
+		const settings = normalizeSettings(await readSettings(this));
 		const statsData = await loadStatsData(this, settings);
 
 		// Sync Zustand store with the loaded data before any React
 		// component mounts.  After this point, store.settings /
 		// store.today are all populated.
-		useStore.getState().hydrateFromData({ settings, stats: statsData?.stats });
+		useStore.getState().hydrate(settings, statsData?.stats);
 
 		// Once-per-day snapshot of the on-disk stats file BEFORE anything
 		// can overwrite it (hydrate → persist).
@@ -69,16 +70,13 @@ export default class KeepTheRhythm extends Plugin {
 
 		this.statusBar = new TodayWordsStatusBar(this);
 
-		// Two independent save channels (registered AFTER hydration, so
-		// boot state can't schedule either):
-		//   persistVersion (requestPersist, rAF-coalesced, data mutations
-		//     such as typing) → stats file only
-		//   settings slice (mutateSettings / external merge) → data.json.
-		// Typing must never rewrite data.json: its saveData is a
-		// truncate-rewrite that can be left half-written if the process is
-		// killed (pagehide flush on mobile).
-		this.persistenceScheduler = setupPersistenceScheduling(this);
-		
+		// Save channels wire AFTER hydration so boot state schedules
+		// nothing: typing/data → stats file, settings → data.json. They
+		// stay separate so keystrokes never hit saveData's non-atomic
+		// truncate-rewrite (details in each module's header).
+		this.statsScheduler = setupStatsPersistence(this);
+		this.settingsScheduler = setupSettingsPersistence(this);
+
 		this.registerLifecycleEvents();
 	}
 
@@ -118,16 +116,20 @@ export default class KeepTheRhythm extends Plugin {
 
 	/**
 	 * Drain any pending editor-change sample into the in-memory store
-	 * and immediately persist the store (settings → data.json, stats →
-	 * the stats file).  Used by the
+	 * and immediately flush both save channels (stats → stats file,
+	 * settings → data.json; the settings flush is a no-op when no
+	 * settings change is pending).  Used by the
 	 * visibilitychange / pagehide handlers (because requestAnimationFrame
 	 * is paused in background tabs) and during plugin unload so a
-	 * coalesced debounced save still lands on disk before the scheduler
-	 * is disposed.
+	 * coalesced debounced save still lands on disk before the schedulers
+	 * are disposed.
 	 */
 	private async flushNow() {
 		await events.flushPendingEditorChange();
-		await this.persistenceScheduler?.flushNow();
+		await Promise.all([
+			this.statsScheduler?.flushNow(),
+			this.settingsScheduler?.flushNow(),
+		]);
 	}
 
 	private initializeCommands() {
@@ -208,8 +210,10 @@ export default class KeepTheRhythm extends Plugin {
 		void this.flushNow();
 
 		// Stop reacting to persist signals.
-		this.persistenceScheduler?.dispose();
-		this.persistenceScheduler = null;
+		this.statsScheduler?.dispose();
+		this.statsScheduler = null;
+		this.settingsScheduler?.dispose();
+		this.settingsScheduler = null;
 
 		this.statusBar?.dispose();
 		this.statusBar = null;
@@ -224,14 +228,11 @@ export default class KeepTheRhythm extends Plugin {
 
 	// #endregion
 
+	/** External data.json push. A truncated / wrong-shape delivery reads
+	 *  as null and is ignored, so it can't clobber live settings. Stats
+	 *  file pickup stays on the focus / 5s-poll / pre-write checks. */
 	async onExternalSettingsChange() {
-		// data.json (settings) is pushed by Obsidian; merge it, then run one
-		// cheap mtime check on the stats file — a sync that delivers
-		// data.json usually delivers the stats file around the same time.
-		// Validate the raw file first: a truncated / empty delivery must
-		// NOT be normalized into defaults and clobber the live settings.
-		await mergeExternalSettings(await readValidDataJson(this));
-		await checkExternalStatsFile(this);
+		await mergeIncomingSettings(await readSettings(this));
 	}
 
 }

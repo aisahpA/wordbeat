@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { PersistedStats, PluginData } from "@/defs/types";
+import { PersistedStats } from "@/defs/types";
 import { Settings, DEFAULT_SETTINGS } from "@/defs/types";
 import { ActivityCounts, DayActivityMap, DaysMap } from "@/defs/types";
 import { getToday } from "@/utils/dateUtils";
@@ -46,21 +46,21 @@ import { decodeActivities } from "./statsCodec";
  *
  *   • settings           — the single in-memory source of truth for settings.
  *                          Mutate via mutateSettings; persistence is wired
- *                          separately in dataPersistence (a subscribe on the
- *                          settings slice → data.json, never on typing).
- *   • persistVersion     — monotonic counter; dataPersistence.ts subscribes
+ *                          separately in settingsPersistence (a subscribe on
+ *                          the settings slice → data.json, never on typing).
+ *   • persistVersion     — monotonic counter; statsPersistence.ts subscribes
  *                          to it (via subscribeWithSelector) to schedule
- *                          debounced JSON saves.
+ *                          debounced stats-file saves.
  *   • todayVersion       — increments when today's data changes, used to
  *                          invalidate the module-level partitioned cache
  *   • historicalVersion  — increments when non-today data changes
  *
  * Data flow:
- *   Boot:    data.json (settings) + stats file → hydrateFromData → store
+ *   Boot:    data.json (settings) + stats file → hydrate → store
  *   Runtime: data mutations → requestPersist() → persistVersion++ →
- *            dataPersistence writes ONLY the stats file
+ *            statsPersistence writes ONLY the stats file
  *   Settings: mutateSettings / external merge → settings-slice subscriber
- *            in dataPersistence → data.json (never triggered by typing)
+ *            in settingsPersistence → data.json (never triggered by typing)
  *   External: onExternalSettingsChange (settings) / stats-file mtime
  *            check (focus, pre-write) → direct store update
  *
@@ -97,12 +97,10 @@ export interface KTRState {
 	 *  re-establishes a fresh row + baseline for the new day. */
 	checkDayChange: () => void;
 	/** Mutate settings draft in place. The settings-slice subscriber in
-	 *  dataPersistence handles saving data.json. */
+	 *  settingsPersistence handles saving data.json. */
 	mutateSettings: (updater: (draft: Settings) => void) => void;
-	/** Hydrate store from the settings file + stats file (boot and re-hydration). */
-	hydrateFromData: (
-		data: (PluginData & { stats?: PersistedStats }),
-	) => void;
+	/** Hydrate store from the settings + stats payloads (boot and re-hydration). */
+	hydrate: (settings: Settings, stats?: PersistedStats) => void;
 
 	// ─── Data actions ───
 	/** Write (or overwrite) the words/chars-added counters for [date, filePath]. */
@@ -181,12 +179,12 @@ export const useStore = create<KTRState>()(
 			set({ settings: newSettings });
 		},
 
-		hydrateFromData: (data) => {
+		hydrate: (settings, stats) => {
 			const cur = get();
 			const today = getToday();
-			const decoded = decodeActivities(data?.stats, today);
+			const decoded = decodeActivities(stats, today);
 			set({
-				settings: data?.settings,
+				settings,
 				days: decoded.days,
 				todayBaselines: decoded.todayBaselines,
 				todayBaselinesDay: decoded.todayBaselinesDay,

@@ -1,7 +1,8 @@
 import assert from "node:assert";
 import { useStore } from "@/core/store";
-import { mergeExternalSettings, mergeExternalStats } from "@/core/externalSync";
-import type { PersistedStats, PluginData } from "@/defs/types";
+import { mergeExternalStats } from "@/core/statsSync";
+import { mergeIncomingSettings } from "@/core/settingsPersistence";
+import type { PersistedStats } from "@/defs/types";
 
 // Minimal window stub — store.requestPersist uses requestAnimationFrame.
 (globalThis as any).window = {
@@ -93,17 +94,13 @@ async function main() {
 	});
 
 	// ─── 5. Settings merge: external overwrites, normalized with defaults ───
-	await mergeExternalSettings({
-		settings: { dailyWritingGoal: 250 },
-	} as unknown as PluginData);
+	await mergeIncomingSettings({ dailyWritingGoal: 250 });
 	assert.strictEqual(useStore.getState().settings.dailyWritingGoal, 250);
 	assert.strictEqual(useStore.getState().settings.preferredUnit, "WORD"); // default backfilled
 
 	// identical payload is a no-op (same settings reference)
 	const before = useStore.getState().settings;
-	await mergeExternalSettings({
-		settings: { dailyWritingGoal: 250 },
-	} as unknown as PluginData);
+	await mergeIncomingSettings({ dailyWritingGoal: 250 });
 	assert.strictEqual(useStore.getState().settings, before);
 
 	console.log("externalSync tests passed");

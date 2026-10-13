@@ -1,16 +1,16 @@
-import { normalizeSettings, PersistedStats, PluginData } from "@/defs/types";
+import { PersistedStats } from "@/defs/types";
 import { ActivityCounts, DayActivityMap, DaysMap } from "@/defs/types";
 import { useStore } from "./store";
 import { decodeActivities, collectActiveFiles } from "./statsCodec";
 import { Notice } from "obsidian";
 
 /**
- * 外部同步合并，按文件拆分：
- *   - mergeExternalSettings —— data.json（Obsidian 管理，经
- *     onExternalSettingsChange 推送）：外部设置整体覆盖本地。
- *   - mergeExternalStats —— 独立的 stats 数据文件（路径可配置，无
- *     data.json 式推送；靠 5s mtime 轮询 + 写前检查 + focus /
- *     visibilitychange 兜底）：行级合并进 store。
+ * 外部 stats 数据文件的同步合并（独立文件，路径可配置；无 data.json 式
+ * 推送，靠 5s mtime 轮询 + 写前检查 + focus / visibilitychange 兜底）：
+ * 行级合并进 store。
+ *
+ * data.json（settings）的外部推送是另一条通道，见
+ * settingsPersistence.ts 的 mergeIncomingSettings。
  *
  * stats 合并策略：
  *   1. 解码外部数据
@@ -45,19 +45,6 @@ export interface StatsMergeOptions {
 	allowDeletions?: boolean;
 }
 
-
-export async function mergeExternalSettings(
-	data: PluginData | null,
-): Promise<void> {
-	if (!data) return;
-	const cur = useStore.getState();
-	// settings: 外部覆盖,并上 defaults 兜底
-	const newSettings = normalizeSettings(data.settings);
-	if (JSON.stringify(newSettings) === JSON.stringify(cur.settings)) return;
-	// The settings-slice subscriber in dataPersistence schedules the
-	// data.json save — no requestPersist (that channel is stats-only).
-	useStore.setState({ settings: newSettings });
-}
 
 export async function mergeExternalStats(
 	stats: PersistedStats | undefined,

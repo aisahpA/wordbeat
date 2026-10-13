@@ -2,6 +2,7 @@
 *.iml
 .idea
 .vscode 
+.trae
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
