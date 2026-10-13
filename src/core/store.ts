@@ -45,7 +45,9 @@ import { decodeActivities } from "./statsCodec";
  *                          version counters — no reference copying.
  *
  *   • settings           — the single in-memory source of truth for settings.
- *                          Mutate via mutateSettings which trigger requestPersist().
+ *                          Mutate via mutateSettings; persistence is wired
+ *                          separately in dataPersistence (a subscribe on the
+ *                          settings slice → data.json, never on typing).
  *   • persistVersion     — monotonic counter; dataPersistence.ts subscribes
  *                          to it (via subscribeWithSelector) to schedule
  *                          debounced JSON saves.
@@ -55,9 +57,10 @@ import { decodeActivities } from "./statsCodec";
  *
  * Data flow:
  *   Boot:    data.json (settings) + stats file → hydrateFromData → store
- *   Runtime: mutations → store.requestPersist() → persistVersion++
- *            dataPersistence builds payloads from store → settings go to
- *            data.json, stats go to the configurable stats file
+ *   Runtime: data mutations → requestPersist() → persistVersion++ →
+ *            dataPersistence writes ONLY the stats file
+ *   Settings: mutateSettings / external merge → settings-slice subscriber
+ *            in dataPersistence → data.json (never triggered by typing)
  *   External: onExternalSettingsChange (settings) / stats-file mtime
  *            check (focus, pre-write) → direct store update
  *
@@ -93,7 +96,8 @@ export interface KTRState {
 	 *  (row in days[today], baseline) so the next touch on any file
 	 *  re-establishes a fresh row + baseline for the new day. */
 	checkDayChange: () => void;
-	/** Mutate settings draft in-place, request persist. */
+	/** Mutate settings draft in place. The settings-slice subscriber in
+	 *  dataPersistence handles saving data.json. */
 	mutateSettings: (updater: (draft: Settings) => void) => void;
 	/** Hydrate store from the settings file + stats file (boot and re-hydration). */
 	hydrateFromData: (
@@ -169,11 +173,12 @@ export const useStore = create<KTRState>()(
 			// Deep-clone so Zustand's default Object.is change detection sees
 			// new references at every level (sidebarConfig, slots, …) when
 			// the updater mutates `newSettings` in place.  Settings is pure
-			// JSON-serializable data, so structuredClone is safe.
+			// JSON-serializable data, so structuredClone is safe.  No
+			// requestPersist(): settings changes persist via the settings-
+			// slice subscription (data.json), separate from stats saves.
 			const newSettings: Settings = structuredClone(cur.settings);
 			updater(newSettings);
 			set({ settings: newSettings });
-			cur.requestPersist();
 		},
 
 		hydrateFromData: (data) => {

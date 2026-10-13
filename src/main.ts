@@ -14,6 +14,7 @@ import { CUSTOM_CODE_BLOCK_COMMANDS } from "@/core/codeBlockTemplates";
 import {
 	snapshotRawDataFile,
 	loadStatsData,
+	readValidDataJson,
 } from "@/core/backup";
 import {
 	setupPersistenceScheduling,
@@ -21,7 +22,7 @@ import {
 	checkExternalStatsFile,
 } from "@/core/dataPersistence";
 import { mergeExternalSettings } from "@/core/externalSync";
-import { PluginData, normalizeSettings } from "@/defs/types";
+import { normalizeSettings } from "@/defs/types";
 import { resetDailySummaryCache } from "@/utils/dailySummaryCache";
 import { resetStatsCodecCache } from "@/core/statsCodec";
 import { resetDataQueryCaches } from "@/core/dataQueries";
@@ -37,7 +38,12 @@ export default class KeepTheRhythm extends Plugin {
 	async onload() {
 		setPlugin(this);
 
-		const loadedData = (await this.loadData()) as PluginData | null;
+		// Raw-read data.json: loadData() returns null for both a missing
+		// and a truncated file; readValidDataJson leaves a corrupt file on
+		// disk instead of silently treating it as first run. A truncated
+		// file is unlikely now that typing never writes data.json (see the
+		// two-channel note below).
+		const loadedData = await readValidDataJson(this);
 		const settings = normalizeSettings(loadedData?.settings);
 		const statsData = await loadStatsData(this, settings);
 
@@ -63,12 +69,14 @@ export default class KeepTheRhythm extends Plugin {
 
 		this.statusBar = new TodayWordsStatusBar(this);
 
-		// The JSON save pipeline subscribes to the store's persistVersion
-		// counter, which is incremented (via requestPersist, rAF-coalesced)
-		// by the data layer after an in-memory mutation. Pure UI refresh
-		// never touches persistVersion, so it can't schedule a save — this
-		// prevents racing saves when only an in-memory activity object was
-		// mutated before flushChangesToJSON.
+		// Two independent save channels (registered AFTER hydration, so
+		// boot state can't schedule either):
+		//   persistVersion (requestPersist, rAF-coalesced, data mutations
+		//     such as typing) → stats file only
+		//   settings slice (mutateSettings / external merge) → data.json.
+		// Typing must never rewrite data.json: its saveData is a
+		// truncate-rewrite that can be left half-written if the process is
+		// killed (pagehide flush on mobile).
 		this.persistenceScheduler = setupPersistenceScheduling(this);
 		
 		this.registerLifecycleEvents();
@@ -220,9 +228,9 @@ export default class KeepTheRhythm extends Plugin {
 		// data.json (settings) is pushed by Obsidian; merge it, then run one
 		// cheap mtime check on the stats file — a sync that delivers
 		// data.json usually delivers the stats file around the same time.
-		await mergeExternalSettings(
-			(await this.loadData()) as PluginData | null,
-		);
+		// Validate the raw file first: a truncated / empty delivery must
+		// NOT be normalized into defaults and clobber the live settings.
+		await mergeExternalSettings(await readValidDataJson(this));
 		await checkExternalStatsFile(this);
 	}
 

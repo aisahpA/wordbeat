@@ -54,8 +54,9 @@ export async function mergeExternalSettings(
 	// settings: 外部覆盖,并上 defaults 兜底
 	const newSettings = normalizeSettings(data.settings);
 	if (JSON.stringify(newSettings) === JSON.stringify(cur.settings)) return;
+	// The settings-slice subscriber in dataPersistence schedules the
+	// data.json save — no requestPersist (that channel is stats-only).
 	useStore.setState({ settings: newSettings });
-	useStore.getState().requestPersist();
 }
 
 export async function mergeExternalStats(

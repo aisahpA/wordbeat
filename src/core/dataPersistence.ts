@@ -1,6 +1,7 @@
 import { Notice, Plugin } from "obsidian";
 
 import { PluginData, Settings, StatsFileData } from "@/defs/types";
+import { writeFileAtomic } from "@/utils/utils";
 import { useStore } from "./store";
 import { encodePersistedStats } from "./statsCodec";
 import { mergeExternalStats } from "./externalSync";
@@ -104,7 +105,9 @@ export async function saveStatsToDisk(plugin: Plugin): Promise<void> {
 	const data = prepareStatsData();
 	const path = getStatsFilePath(plugin);
 	try {
-		await plugin.app.vault.adapter.write(path, JSON.stringify(data));
+		// Atomic replace (temp file + rename): a sync client watching the
+		// vault must never observe a half-written, unparseable stats file.
+		await writeFileAtomic(plugin.app.vault.adapter, path, JSON.stringify(data));
 	} catch (err) {
 		console.error("KTR: can't write stats data file:", err);
 		new Notice(t("persistence.writeFailed"));
@@ -170,8 +173,8 @@ export function prepareStatsData(): StatsFileData {
 	};
 }
 
-// Last serialized settings payload — stats churn must not rewrite the
-// settings file (and its sync traffic) when nothing changed.
+// Last serialized settings payload — data.json must be rewritten only
+// when settings actually changed (seeded at scheduler setup).
 let lastSettingsJson = "";
 
 export async function saveSettingsToDisk(plugin: Plugin): Promise<void> {
@@ -180,16 +183,6 @@ export async function saveSettingsToDisk(plugin: Plugin): Promise<void> {
 	if (json === lastSettingsJson) return;
 	lastSettingsJson = json;
 	await plugin.saveData(data);
-}
-
-/**
- * Persist ALL in-memory state: settings → data.json (only when changed),
- * stats → the configurable stats data file.  Constructs both payloads
- * directly from the store — no intermediate staging buffer.
- */
-async function saveDataToDisk(plugin: Plugin) {
-	await saveSettingsToDisk(plugin);
-	await saveStatsToDisk(plugin);
 }
 
 // ─── Stats file location switch ───
@@ -258,7 +251,7 @@ export async function switchStatsFile(
 		}
 
 		await ensureParentFolder(plugin, target);
-		await adapter.write(target, JSON.stringify(prepareStatsData()));
+		await writeFileAtomic(adapter, target, JSON.stringify(prepareStatsData()));
 		if (await adapter.exists(currentPath)) {
 			await adapter.remove(currentPath);
 		}
@@ -286,60 +279,79 @@ export async function switchStatsFile(
 export interface PersistenceScheduler {
 	dispose: () => void;
 	/**
-	 * Cancel any pending debounced save and write the in-memory store to
-	 * data.json / the stats file immediately.  Used by visibilitychange /
-	 * pagehide handlers because requestAnimationFrame is paused in
-	 * background tabs — without an explicit flush, a user who types and
-	 * then switches apps for a while can lose their last few edits to an
-	 * OS kill or hard reload.
+	 * Cancel any pending debounced save and write pending state to disk
+	 * immediately (stats file, plus data.json only when a settings change
+	 * is pending).  Used by visibilitychange / pagehide handlers because
+	 * requestAnimationFrame is paused in background tabs — without an
+	 * explicit flush, a user who types and then switches apps can lose
+	 * their last few edits to an OS kill or hard reload.
 	 */
 	flushNow: () => Promise<void>;
 }
 
+/** A self-cancelling debounce: schedule() restarts the timer, run()
+ *  flushes immediately. clearTimeout on reschedule makes a generation
+ *  counter unnecessary. */
+function debouncedSave(save: () => Promise<void>, delayMs: number) {
+	let timer: number | null = null;
+	return {
+		schedule: () => {
+			if (timer !== null) window.clearTimeout(timer);
+			timer = window.setTimeout(() => {
+				timer = null;
+				void save();
+			}, delayMs);
+		},
+		run: async () => {
+			if (timer !== null) window.clearTimeout(timer);
+			timer = null;
+			await save();
+		},
+		cancel: () => {
+			if (timer !== null) window.clearTimeout(timer);
+			timer = null;
+		},
+	};
+}
+
 /**
- * Setup debounced JSON persistence scheduling.
- * Subscribes to persistVersion changes from store and schedules debounced saves.
- * Returns scheduler with dispose to be called on unload.
+ * Two INDEPENDENT persistence channels (subscribed AFTER boot hydration,
+ * so the initial hydrate schedules nothing):
+ *   - persistVersion (typing / data mutations) → stats file only;
+ *   - settings slice (mutateSettings / external settings merge) →
+ *     data.json.
+ * Keystrokes never rewrite data.json: Obsidian's saveData is a
+ * non-atomic truncate-rewrite, and the old "save both on every typing
+ * burst" design could leave it truncated when the process was killed.
  */
 export function setupPersistenceScheduling(
 	plugin: Plugin,
 ): PersistenceScheduler {
-	let JsonDebounceTimeout: number | null = null;
-	let _saveGen = 0;
+	// Seed the dedup snapshot so a flush with unchanged settings can't
+	// rewrite data.json after a module (re)load.
+	lastSettingsJson = JSON.stringify(prepareSettingsData());
 
-	const scheduleSave = () => {
-		if (JsonDebounceTimeout !== null) window.clearTimeout(JsonDebounceTimeout);
+	const statsSave = debouncedSave(() => saveStatsToDisk(plugin), JSON_DEBOUNCE_TIME);
+	const settingsSave = debouncedSave(() => saveSettingsToDisk(plugin), JSON_DEBOUNCE_TIME);
 
-		_saveGen++;
-		const gen = _saveGen;
-		JsonDebounceTimeout = window.setTimeout(() => {
-			if (gen !== _saveGen) return;
-			JsonDebounceTimeout = null;
-			void saveDataToDisk(plugin);
-		}, JSON_DEBOUNCE_TIME);
-	};
-
-	const unsub = useStore.subscribe(
+	const unsubStats = useStore.subscribe(
 		(s) => s.persistVersion,
-		() => scheduleSave(),
+		statsSave.schedule,
+	);
+	const unsubSettings = useStore.subscribe(
+		(s) => s.settings,
+		settingsSave.schedule,
 	);
 
-	const flushNow = async () => {
-		if (JsonDebounceTimeout !== null) {
-			window.clearTimeout(JsonDebounceTimeout);
-			JsonDebounceTimeout = null;
-		}
-		_saveGen++; // invalidate any in-flight debounced save
-		await saveDataToDisk(plugin);
-	};
-
 	return {
-		dispose: () => {
-			unsub();
-			_saveGen++;
-			if (JsonDebounceTimeout !== null) window.clearTimeout(JsonDebounceTimeout);
-			JsonDebounceTimeout = null;
+		flushNow: async () => {
+			await Promise.all([statsSave.run(), settingsSave.run()]);
 		},
-		flushNow,
+		dispose: () => {
+			unsubStats();
+			unsubSettings();
+			statsSave.cancel();
+			settingsSave.cancel();
+		},
 	};
 }

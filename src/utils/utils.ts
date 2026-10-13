@@ -1,9 +1,34 @@
 import { HeatmapColorModes, Unit } from "../defs/types";
 import { CalculationType, TargetCount } from "../defs/types";
-import { App } from "obsidian";
+import { App, DataAdapter } from "obsidian";
 import { TFile } from "obsidian";
 import { MarkdownView } from "obsidian";
 import { WorkspaceLeaf } from "obsidian";
+
+/**
+ * Write a file via a temp sibling + rename so the destination path only
+ * ever appears as a COMPLETE file — a truncate-then-write lets a
+ * file-watching sync client (e.g. Nutstore) observe or upload a
+ * half-written file.  Falls back to a direct write if anything fails.
+ */
+export async function writeFileAtomic(
+	adapter: DataAdapter,
+	path: string,
+	data: string,
+): Promise<void> {
+	const tmpPath = `${path}.tmp`;
+	try {
+		await adapter.write(tmpPath, data);
+		await adapter.rename(tmpPath, path);
+	} catch {
+		try {
+			await adapter.remove(tmpPath);
+		} catch {
+			// stale temp already gone
+		}
+		await adapter.write(path, data);
+	}
+}
 
 export function getLeafWithFile(app: App, file: TFile): WorkspaceLeaf | null {
 	let result: WorkspaceLeaf | null = null;
