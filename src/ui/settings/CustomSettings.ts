@@ -138,11 +138,11 @@ export function createStartDateSetting(setting: Setting) {
   setting.controlEl.createEl("input", {
     type: "date",
     value: startDate,
-    cls: "ktr__start-date-picker",
+    cls: "wb__start-date-picker",
   });
 
   setting.controlEl
-    .querySelector("input.ktr__start-date-picker")
+    .querySelector("input.wb__start-date-picker")
     ?.addEventListener("change", (event) => {
       const value = (event.target as HTMLInputElement).value;
       useStore.getState().mutateSettings((draft) => {
@@ -195,18 +195,18 @@ export function createThresholdSettings(setting: Setting) {
 	const settings = useStore.getState().settings;
 	const { intensityMode, intensityStops } = settings.heatmapConfig;
 
-	setting.setClass("ktr__threshold-inputs");
+	setting.setClass("wb__threshold-inputs");
 
 	// SOLID: on/off threshold is tied to the daily writing goal.
 	if (intensityMode === HeatmapColorModes.SOLID) {
 		const goal = settings.dailyWritingGoal;
-		const info = setting.controlEl.createSpan({ cls: "ktr__threshold-solid-info" });
+		const info = setting.controlEl.createSpan({ cls: "wb__threshold-solid-info" });
 		info.createSpan({
 			text: t("settings.thresholds.solidInfo", goal),
 		});
 		if (goal <= 0) {
 			info.createSpan({
-				cls: "ktr__threshold-solid-warn",
+				cls: "wb__threshold-solid-warn",
 				text: t("settings.thresholds.solidWarn"),
 			});
 		}
@@ -224,7 +224,7 @@ export function createThresholdSettings(setting: Setting) {
 
 	thresholds.push({ key: "high", label: t("settings.thresholds.high") });
 
-	const hint = setting.controlEl.createSpan({ cls: "ktr__threshold-hint" });
+	const hint = setting.controlEl.createSpan({ cls: "wb__threshold-hint" });
 	if (intensityMode === HeatmapColorModes.STOPS) {
 		hint.setText(t("settings.thresholds.stopsHint"));
 	} else {
@@ -233,18 +233,18 @@ export function createThresholdSettings(setting: Setting) {
 		);
 	}
 
-	setting.setClass("ktr__threshold-inputs");
+	setting.setClass("wb__threshold-inputs");
 
 	thresholds.forEach(({ key, label }) => {
-		const wrapper = setting.controlEl.createDiv({ cls: "ktr__threshold-slider" });
-		wrapper.createSpan({ cls: "ktr__threshold-slider-label", text: label });
+		const wrapper = setting.controlEl.createDiv({ cls: "wb__threshold-slider" });
+		wrapper.createSpan({ cls: "wb__threshold-slider-label", text: label });
 		const slider = wrapper.createEl("input", {
 			type: "range",
-			cls: "ktr__threshold-slider-input",
+			cls: "wb__threshold-slider-input",
 			attr: { min: "0", max: "100", step: "1" },
 		});
 		const valueEl = wrapper.createSpan({
-			cls: "ktr__threshold-slider-value",
+			cls: "wb__threshold-slider-value",
 			text: t("settings.thresholds.words", intensityStops[key]),
 		});
 

@@ -36,7 +36,7 @@
 	}
 }
 
-.block-language-ktr-slots .slot__list {
+.block-language-wb-slots .slot__list {
 	> *:not(:first-child) {
 		margin-top: 0px;
 		height: 100%;
@@ -93,7 +93,7 @@
 		color: var(--text-error);
 	}
 
-	select.KTR-min-select {
+	select.wb-min-select {
 		all: unset;
 		cursor: pointer;
 		color: var(--text-muted);
@@ -156,7 +156,7 @@
 * BUTTONS
 */
 
-button.KTR-add-slot-button {
+button.wb-add-slot-button {
 	box-shadow: unset;
 	cursor: pointer;
 
@@ -192,7 +192,7 @@ button.KTR-add-slot-button {
 	color: var(--text-faint);
 }
 
-.cm-preview-code-block:has(.block-language-ktr-slots) {
+.cm-preview-code-block:has(.block-language-wb-slots) {
 	border-radius: var(--radius-m) !important;
 }
 
@@ -253,12 +253,12 @@ button.KTR-add-slot-button {
 	}
 }
 
-.KTR-week-progress {
+.wb-week-progress {
 	display: flex;
 	gap: 4px;
 	margin-top: 8px;
 
-	.KTR-dot {
+	.wb-dot {
 		width: 100%;
 		height: 6px;
 		background-color: var(--background-secondary-alt);

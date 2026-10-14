@@ -93,8 +93,8 @@ export class LanguagePickerModal extends Modal {
   }
 
   private renderToggles(container: HTMLElement) {
-    const existing = container.querySelector<HTMLElement>(".ktr-language-picker-list");
-    const wrapper = existing ?? container.createDiv({ cls: "ktr-language-picker-list" });
+    const existing = container.querySelector<HTMLElement>(".wb-language-picker-list");
+    const wrapper = existing ?? container.createDiv({ cls: "wb-language-picker-list" });
     wrapper.empty();
 
     const labels = getLanguageLabels();

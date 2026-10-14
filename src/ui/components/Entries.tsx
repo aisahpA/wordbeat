@@ -530,7 +530,7 @@ export const Entries = ({ date: dateProp, filters, preferredUnit, onDateChange }
 					<input
 						ref={dateInputRef}
 						type="date"
-						className="ktr-hidden-date-input"
+						className="wb-hidden-date-input"
 						max={today}
 						value={date}
 						onChange={(e) => handleDatePicked(e.target.value)}

@@ -16,15 +16,15 @@ export class IconPickerModal extends Modal {
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.addClass("KTR-icon-picker");
+		contentEl.addClass("wb-icon-picker");
 		contentEl.createEl("h3", { text: t("iconPicker.title") });
 
 		const search = contentEl.createEl("input", {
 			type: "text",
-			cls: "KTR-icon-picker__search",
+			cls: "wb-icon-picker__search",
 			attr: { placeholder: t("iconPicker.search") },
 		});
-		const grid = contentEl.createDiv({ cls: "KTR-icon-picker__grid" });
+		const grid = contentEl.createDiv({ cls: "wb-icon-picker__grid" });
 
 		const render = (query: string) => {
 			grid.empty();
@@ -35,7 +35,7 @@ export class IconPickerModal extends Modal {
 
 			ids.slice(0, MAX_RESULTS).forEach((id) => {
 				const button = grid.createEl("button", {
-					cls: "KTR-icon-picker__item" + (id === this.current ? " is-selected" : ""),
+					cls: "wb-icon-picker__item" + (id === this.current ? " is-selected" : ""),
 					attr: { "aria-label": id, title: id },
 				});
 				setIcon(button, id);
@@ -47,7 +47,7 @@ export class IconPickerModal extends Modal {
 
 			if (ids.length === 0) {
 				grid.createDiv({
-					cls: "KTR-icon-picker__empty",
+					cls: "wb-icon-picker__empty",
 					text: t("iconPicker.empty"),
 				});
 			}

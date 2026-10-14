@@ -30,4 +30,17 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		rules: {
+			// WordBeat is the brand name (proper noun), keep its casing in
+			// ribbon titles, view names and the "WordBeat: …" Notice prefix.
+			"obsidianmd/ui/sentence-case": [
+				"warn",
+				{
+					enforceCamelCaseLower: true,
+					ignoreRegex: ["^WordBeat(?:[\\s:]|$)"],
+				},
+			],
+		},
+	},
 );

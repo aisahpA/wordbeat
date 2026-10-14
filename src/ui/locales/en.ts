@@ -133,8 +133,8 @@ export const en = {
 	"settings.statsFile.search.placeholder":
 		"Type to search JSON files in the vault",
 	"settings.statsFile.search.empty": "No JSON file found",
-	"settings.notice.defaultFile": "Ktr: using the default data file location.",
-	"settings.notice.fileSet": "KTR: data file set to {0}.",
+	"settings.notice.defaultFile": "WordBeat: using the default data file location.",
+	"settings.notice.fileSet": "WordBeat: data file set to {0}.",
 	"settings.storedHistory.name": "Stored History",
 	"settings.storedHistory.one": "{0} day of writing history on record, {1} entries.",
 	"settings.storedHistory.other": "{0} days of writing history on record, {1} entries.",
@@ -151,15 +151,15 @@ export const en = {
 
 	// Persistence notices
 	"persistence.writeFailed":
-		"Ktr: failed to write the stats data file — see console.",
+		"WordBeat: failed to write the stats data file — see console.",
 	"persistence.invalidPath":
-		"Ktr: invalid data file path — use a vault-relative .json path.",
+		"WordBeat: invalid data file path — use a vault-relative .json path.",
 	"persistence.unreadableTarget":
-		"Ktr: existing file at the target path could not be read.",
+		"WordBeat: existing file at the target path could not be read.",
 	"persistence.wrongFormat":
-		"Ktr: that file exists but is not a stats data file — refusing to overwrite it.",
+		"WordBeat: that file exists but is not a stats data file — refusing to overwrite it.",
 	"persistence.switchFailed":
-		"Ktr: failed to switch the data file — see console.",
+		"WordBeat: failed to switch the data file — see console.",
 
 	// Language picker
 	"languagePicker.title": "Languages to count",

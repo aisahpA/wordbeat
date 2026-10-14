@@ -127,8 +127,8 @@ export const zh: En = {
 	"settings.statsFile.pickFile": "从仓库已有的 JSON 文件中选择",
 	"settings.statsFile.search.placeholder": "输入以搜索仓库内的 JSON 文件",
 	"settings.statsFile.search.empty": "未找到 JSON 文件",
-	"settings.notice.defaultFile": "KTR：正在使用默认数据文件位置。",
-	"settings.notice.fileSet": "KTR：数据文件已设置为 {0}。",
+	"settings.notice.defaultFile": "WordBeat：正在使用默认数据文件位置。",
+	"settings.notice.fileSet": "WordBeat：数据文件已设置为 {0}。",
 	"settings.storedHistory.name": "已存历史",
 	"settings.storedHistory.one": "已记录 {0} 天的写作历史，共 {1} 条记录。",
 	"settings.storedHistory.other": "已记录 {0} 天的写作历史，共 {1} 条记录。",
@@ -143,13 +143,13 @@ export const zh: En = {
 	"settings.backupRetained.validate": "必须是大于 0 的整数。",
 
 	// Persistence notices
-	"persistence.writeFailed": "KTR：写入统计数据文件失败，详见控制台。",
+	"persistence.writeFailed": "WordBeat：写入统计数据文件失败，详见控制台。",
 	"persistence.invalidPath":
-		"KTR：数据文件路径无效，请使用库内相对路径且以 .json 结尾。",
-	"persistence.unreadableTarget": "KTR：目标路径已存在的文件无法读取。",
+		"WordBeat：数据文件路径无效，请使用库内相对路径且以 .json 结尾。",
+	"persistence.unreadableTarget": "WordBeat：目标路径已存在的文件无法读取。",
 	"persistence.wrongFormat":
-		"KTR：该文件已存在，但不是统计数据文件，已拒绝覆盖。",
-	"persistence.switchFailed": "KTR：切换数据文件失败，详见控制台。",
+		"WordBeat：该文件已存在，但不是统计数据文件，已拒绝覆盖。",
+	"persistence.switchFailed": "WordBeat：切换数据文件失败，详见控制台。",
 
 	// Language picker
 	"languagePicker.title": "要统计的语言",

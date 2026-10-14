@@ -32,7 +32,7 @@ import { resetStatsCodecCache } from "@/core/statsCodec";
 import { resetDataQueryCaches } from "@/core/dataQueries";
 import { resetFolderCache } from "@/core/pathFilter";
 
-export default class KeepTheRhythm extends Plugin {
+export default class WordBeat extends Plugin {
 	
 	// Two independent persistence channels with debounce state and
 	// unsubscribe handles (stats file / data.json respectively).
@@ -133,7 +133,7 @@ export default class KeepTheRhythm extends Plugin {
 	}
 
 	private initializeCommands() {
-		this.addRibbonIcon("calendar-days", "Keep the rhythm2", () => {
+		this.addRibbonIcon("calendar-days", "WordBeat", () => {
 			void activateSidebarView();
 		});
 
@@ -185,17 +185,17 @@ export default class KeepTheRhythm extends Plugin {
 
 	private initializeCodeBlocks() {
 		this.registerMarkdownCodeBlockProcessor(
-			"ktr-heatmap",
+			"wb-heatmap",
 			codeBlocks.createHeatmapCodeBlock,
 		);
 
 		this.registerMarkdownCodeBlockProcessor(
-			"ktr-slots",
+			"wb-slots",
 			codeBlocks.createSlotsCodeBlock,
 		);
 
 		this.registerMarkdownCodeBlockProcessor(
-			"ktr-entries",
+			"wb-entries",
 			codeBlocks.createEntriesCodeBlock,
 		);
 	}

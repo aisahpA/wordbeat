@@ -34,7 +34,7 @@ export function insertCustomCodeBlock(
 		getPlugin().app.workspace.getActiveViewOfType(MarkdownView)?.editor;
 
 	if (!activeEditor) {
-		new Notice("Ktr: Open a Markdown file to insert a code block.");
+		new Notice("WordBeat: Open a Markdown file to insert a code block.");
 		return;
 	}
 

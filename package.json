@@ -1,7 +1,7 @@
 {
-  "name": "keep-the-rhyhtm2",
+  "name": "wordbeat",
   "version": "1.0.2",
-  "description": "Visualize daily word count with a heatmap.",
+  "description": "Track your daily writing with a heatmap, goals and streaks.",
   "main": "main.js",
   "type": "module",
   "scripts": {

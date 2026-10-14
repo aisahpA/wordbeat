@@ -50,7 +50,7 @@ class FakeAdapter {
 
 const makePlugin = (adapter: FakeAdapter) =>
 	({
-		manifest: { dir: ".obsidian/plugins/ktr2" },
+		manifest: { dir: ".obsidian/plugins/wordbeat" },
 		app: { vault: { adapter } },
 		saved: null as unknown,
 		saveData: async function (this: { saved: unknown }, d: unknown) {
@@ -61,7 +61,7 @@ const makePlugin = (adapter: FakeAdapter) =>
 async function main() {
 	const adapter = new FakeAdapter();
 	const plugin = makePlugin(adapter);
-	const defaultPath = ".obsidian/plugins/ktr2/stats.json";
+	const defaultPath = ".obsidian/plugins/wordbeat/wordbeat-data.json";
 	assert.strictEqual(defaultStatsFilePath(plugin), defaultPath);
 
 	// ─── 1. Path validation ───
@@ -83,16 +83,16 @@ async function main() {
 		JSON.stringify({ schema: "0.5", stats: { days: {} } }),
 	);
 
-	assert.strictEqual(await switchStatsFile(plugin, "notes/ktr-stats.json"), true);
-	assert.ok(adapter.files.has("notes/ktr-stats.json"));
+	assert.strictEqual(await switchStatsFile(plugin, "notes/wb-stats.json"), true);
+	assert.ok(adapter.files.has("notes/wb-stats.json"));
 	assert.ok(!adapter.files.has(defaultPath));
 	assert.strictEqual(
 		useStore.getState().settings.statsFileName,
-		"notes/ktr-stats.json",
+		"notes/wb-stats.json",
 	);
-	assert.strictEqual(getStatsFilePath(plugin), "notes/ktr-stats.json");
+	assert.strictEqual(getStatsFilePath(plugin), "notes/wb-stats.json");
 
-	const written = JSON.parse(adapter.files.get("notes/ktr-stats.json")!);
+	const written = JSON.parse(adapter.files.get("notes/wb-stats.json")!);
 	assert.ok(written.stats.days["2026-09-01"]);
 	assert.ok(written.stats.fileDict["a.md"] !== undefined); // dictionary-encoded
 
@@ -117,7 +117,7 @@ async function main() {
 	assert.deepStrictEqual(useStore.getState().days["2026-09-02"], {
 		"b.md": { w: 7, c: 1 },
 	});
-	assert.ok(!adapter.files.has("notes/ktr-stats.json")); // old file removed
+	assert.ok(!adapter.files.has("notes/wb-stats.json")); // old file removed
 
 	// ─── 4. Unreadable target blocks the switch, nothing touched ───
 	adapter.folders.add("bad");

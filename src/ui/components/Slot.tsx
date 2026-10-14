@@ -158,7 +158,7 @@ export const Slot = React.memo(function Slot({
 									}
 								>
 									<button
-										className="KTR-min-button"
+										className="wb-min-button"
 										ref={(el) => {
 											calcButtonRef.current = el;
 											setCalcButtonIcon(el);
@@ -172,7 +172,7 @@ export const Slot = React.memo(function Slot({
 
 							<Tooltip content={t("slot.changeUnit")}>
 								<button
-									className="KTR-min-button"
+									className="wb-min-button"
 									ref={(el) => {
 										unitButtonRef.current = el;
 										setUnitButtonIcon(el);
@@ -184,7 +184,7 @@ export const Slot = React.memo(function Slot({
 							</Tooltip>
 							<Tooltip content={t("slot.changeType")}>
 								<select
-									className="KTR-min-select"
+									className="wb-min-select"
 									value={optionType}
 									onChange={selectType}
 									onClick={(e) => e.stopPropagation()}
@@ -198,7 +198,7 @@ export const Slot = React.memo(function Slot({
 							</Tooltip>
 							<Tooltip content={t("common.delete")}>
 								<button
-									className="KTR-min-button"
+									className="wb-min-button"
 									ref={(el) => {
 										deleteButtonRef.current = el;
 										setDeleteButtonIcon(el);
@@ -236,12 +236,12 @@ export const Slot = React.memo(function Slot({
 				</div>
 			)}
 			{optionType === TargetCount.CURRENT_WEEK && (
-				<div className="KTR-week-progress">
+				<div className="wb-week-progress">
 					{getWeekdaysNames().map((_, index) => (
 						<div
 							key={index}
 							className={
-								"KTR-dot " +
+								"wb-dot " +
 								(weekDayCompletedStates[index] ? "completed" : "")
 							}
 						></div>

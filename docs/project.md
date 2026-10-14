@@ -1,4 +1,4 @@
-- In-memory activity storage via Zustand (`useStore`); persisted on debounce (settings → `data.json`, stats → configurable stats data file, default `stats.json` in the plugin folder)
+- In-memory activity storage via Zustand (`useStore`); persisted on debounce (settings → `data.json`, stats → configurable stats data file, default `wordbeat-data.json` in the plugin folder)
 - Source of truth: data.json (settings) + stats file (activity history)
     - Allows for cross device sync without overriding data (`onExternalSettingsChange` merges settings; stats file changes are picked up via a 5s mtime poll, focus/visibility wake checks, and a pre-write merge)
     - Stats file location is settable to any vault-relative path (Settings → Data Storage); switching merges an existing file (max-wins) and removes the old one

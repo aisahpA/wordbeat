@@ -97,7 +97,7 @@ async function main() {
 	seed({ trackedFolders: ["notes"] });
 	present.clear();
 	handleFileDelete({
-		path: ".obsidian/plugins/keep-the-rhythm2/stats.json",
+		path: ".obsidian/plugins/wordbeat/wordbeat-data.json",
 		extension: "json",
 	} as unknown as TFile);
 	handleFileDelete({

@@ -5,7 +5,7 @@ import { writeFileAtomic } from "@/utils/utils";
 import { getStatsFilePath, readStatsFile } from "./statsPersistence";
 
 const DEFAULT_BACKUP_DAYS = 7;
-const DEFAULT_BACKUP_FOLDER = ".keep-the-rhythm2";
+const DEFAULT_BACKUP_FOLDER = ".wordbeat";
 const BACKUP_DATE_RE = /^backup-(\d{4}-\d{2}-\d{2})(?:-[\w\d.]+)?\.json$/;
 
 function getBackupFolder(settings?: Settings): string {
@@ -52,10 +52,10 @@ export async function snapshotRawDataFile(
 			await app.vault.adapter.mkdir(folderPath);
 		}
 		await writeFileAtomic(app.vault.adapter, backupPath, raw);
-		new Notice("Ktr: New backup saved.");
+		new Notice("WordBeat: New backup saved.");
 	} catch (err) {
-		console.error("KTR Error trying to create backup: ", err);
-		new Notice("Ktr: Backup failed — see developer console for details.", 0);
+		console.error("WordBeat: error trying to create backup: ", err);
+		new Notice("WordBeat: Backup failed — see developer console for details.", 0);
 	}
 
 	await cleanOlderBackups(folderPath, config.maxNumberOfBackups ?? DEFAULT_BACKUP_DAYS, app);
@@ -87,8 +87,8 @@ export async function loadStatsData(
 
 	const restored = await newestBackupStats(plugin.app, settings);
 	if (!restored) return statsData;
-	console.warn("KTR: stats file was empty — restored from backup");
-	new Notice("Ktr: stats file was empty — restored from backup.", 0);
+	console.warn("WordBeat: stats file was empty — restored from backup");
+	new Notice("WordBeat: stats file was empty — restored from backup.", 0);
 	return restored;
 }
 
@@ -120,11 +120,11 @@ async function newestBackupStats(
 					};
 				}
 			} catch (err) {
-				console.error(`KTR restore from ${name} failed:`, err);
+				console.error(`WordBeat: restore from ${name} failed:`, err);
 			}
 		}
 	} catch (err) {
-		console.error("KTR restore check failed:", err);
+		console.error("WordBeat: restore check failed:", err);
 	}
 	return null;
 }

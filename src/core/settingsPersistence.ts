@@ -50,7 +50,7 @@ export async function saveSettingsToDisk(plugin: Plugin): Promise<void> {
 			settings: useStore.getState().settings,
 		} satisfies PluginData);
 	} catch (err) {
-		console.error("KTR: can't write data.json:", err);
+		console.error("WordBeat: can't write data.json:", err);
 		new Notice(t("persistence.writeFailed"));
 	}
 }

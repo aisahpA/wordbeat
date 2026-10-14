@@ -167,7 +167,7 @@ export interface Settings {
 	trackedFolders: string[];
 	/**
 	 * Vault-relative path (including the file name) of the stats data file.
-	 * Empty = default location (`stats.json` next to data.json in the
+	 * Empty = default location (`wordbeat-data.json` next to data.json in the
 	 * plugin folder). See statsPersistence.switchStatsFile.
 	 */
 	statsFileName: string;
@@ -232,8 +232,9 @@ export interface PersistedStats {
 	todayBaselines?: PersistedBaselines;
 }
 
-/** The stats partition's own on-disk file (defaults to `stats.json`
- *  next to data.json; location configured via `Settings.statsFileName`). */
+/** The stats partition's own on-disk file (defaults to
+ *  `wordbeat-data.json` next to data.json; location configured via
+ *  `Settings.statsFileName`). */
 export interface StatsFileData {
 	schema?: string;
 	stats?: PersistedStats;
@@ -335,7 +336,7 @@ export const DEFAULT_SETTINGS: Settings = {
 	},
 	backupConfig: {
 		enabled: true,
-		folderPath: ".keep-the-rhythm2",
+		folderPath: ".wordbeat",
 		maxNumberOfBackups: 7,
 	},
 	statusBar: {

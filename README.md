@@ -1,32 +1,22 @@
-# Keep the Rhythm2
+# WordBeat
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-An Obsidian plugin that tracks your daily writing, helps you set goals, and visualizes progress with a heatmap. A reworked fork of [Keep the Rhythm](https://github.com/benjaminezequiel/keep-the-rhythm).
+An Obsidian plugin that tracks your daily writing, helps you set goals and keep a streak, and visualizes progress with a heatmap.
 
 ![image](https://github.com/user-attachments/assets/8acd047d-68da-42d0-835d-6c7ab55b6f65)
 
-## Differences from upstream
+## Features
 
-Compared with upstream [`benjaminezequiel/keep-the-rhythm`](https://github.com/benjaminezequiel/keep-the-rhythm) `v0.2.16` (this fork branched from `v0.2.12`):
-
-| Area | Upstream | This plugin (`keep-the-rhythm2`) |
-| --- | --- | --- |
-| Storage | Dexie/IndexedDB; full rewrite into `data.json`; per-file 5-minute deltas; **a permanent row for every file click**, even files never written to | Plain JSON stats file (default `stats.json`, configurable vault path); dictionary-encoded paths, per-day aggregates; files only opened add no row; ~85–94% smaller |
-| State | Manual event/refresh | Zustand reactive store with partitioned caches (O(1) slot lookups) |
-| Live tracking | 5-minute time entries | Live delta vs. day-start baseline; may go negative and is editable |
-| Tracking scope | Whole vault | **Tracked Folders** to restrict tracking to part of the vault |
-| Status bar | — | Today's count / goal; click to open the sidebar |
-| Languages | 10 scripts, CJK combined | 10 scripts, Chinese / Japanese / Korean split out |
-| Slots | `WHOLE_VAULT` present; `CURRENT_FILE` = whole file count | `WHOLE_VAULT` **removed**; `CURRENT_FILE` = today's delta for the active file |
-| `LAST_DAY` | Last 24 hours | Last 2 calendar days |
-| Heatmap block | `CENTER` option | Adds `CELL_SIZE`, `UNIT`, left-align; also supports `CENTER` |
-| Entries | Manual add only | Add, inline edit and delete |
-| Backups | Up to 3 | Once per day, keeps 7; auto-restores the newest non-empty backup if the stats file is missing/emptied |
-| Multi-device sync | Row merge via Dexie ids | mtime sentinel + row-level max-wins merge + empty-file guard |
-| Commands | Open, add manual entry, check streak, 3 insert-block | Open sidebar + 3 insert-block |
-
-> No automatic migration from upstream's Dexie / `data.json` history is implemented. This fork keeps its stats in its own dictionary-encoded file and starts fresh.
+- **Automatic tracking** — every keystroke is counted per file, per day; no manual logging required
+- **Writing goals and streaks** — set a daily goal and watch your consecutive-days streak grow
+- **Heatmap** — a GitHub-style calendar of your writing activity, fully customizable (coloring modes, cell shape, labels, range, light/dark palettes)
+- **Data slots** — today / this week / this month / this year / rolling periods / current streak, as words or chars, totals or averages
+- **Tracked Folders** — restrict tracking to part of the vault
+- **Three embeddable code blocks** — heatmap, slots and daily entries
+- **Status bar** — today's count / goal; click to open the sidebar
+- **Local-first storage** — one compact, dictionary-encoded JSON stats file; sync-safe row-level merge for Obsidian Sync, Git, Nutstore, etc.
+- **Automatic backups** — once per day, keeps 7; auto-restores the newest non-empty backup if the stats file goes missing or is wiped
 
 ## Installation
 
@@ -34,18 +24,18 @@ Compared with upstream [`benjaminezequiel/keep-the-rhythm`](https://github.com/b
 
 1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin and enable it.
 2. Run the command `BRAT: Add a beta plugin for testing`.
-3. Enter `aisahpA/keep-the-rhythm`.
-4. Click **Add Plugin**, then enable **Keep the Rhythm2** in Settings → Community plugins.
+3. Enter `aisahpA/wordbeat`.
+4. Click **Add Plugin**, then enable **WordBeat** in Settings → Community plugins.
 
 BRAT keeps the plugin updated from this repository's releases.
 
 #### MANUAL INSTALLATION
 
 1. Download `main.js`, `manifest.json` and `styles.css` from this repository's Releases section.
-2. Create the folder `<your-vault>/.obsidian/plugins/keep-the-rhythm2/`.
+2. Create the folder `<your-vault>/.obsidian/plugins/wordbeat/`.
 3. Put the three files inside it.
 4. Reload Obsidian.
-5. Go to Settings → Community plugins and enable **Keep the Rhythm2**.
+5. Go to Settings → Community plugins and enable **WordBeat**.
 
 ## Usage
 
@@ -54,7 +44,7 @@ BRAT keeps the plugin updated from this repository's releases.
 
 ### Basic Usage
 
-Once enabled, Keep the Rhythm2 tracks your writing automatically. To view your statistics:
+Once enabled, WordBeat tracks your writing automatically. To view your statistics:
 
 1. Click the calendar icon in the ribbon or run the command `Open sidebar view`.
 2. The sidebar shows your slots (overview), the heatmap, and today's entries.
@@ -105,12 +95,12 @@ Add up to 10 slots per view. Each is `TARGET, UNIT, CALC`, where `UNIT` is `WORD
 
 Three embeddable code blocks. Insert them with the commands `Insert Heatmap/Slots/Entries code block` (or type them manually).
 
-#### Heatmap (`ktr-heatmap`)
+#### Heatmap (`wb-heatmap`)
 
 A filter expression, then an `OPTIONS` section:
 
 ````
-```ktr-heatmap
+```wb-heatmap
 filePath starts_with "journal"
 
 OPTIONS
@@ -127,12 +117,12 @@ UNIT WORD
 - Query fields: `date`, `filePath`, `wordsAdded`, `charsAdded`. Operators: `starts_with`, `contains`, `==`, `!=`, `>`, `<`, `>=`, `<=`, `&&`, `||`, `!`, plus `AND`/`OR` aliases and parentheses.
 - Options: `HIDE month_labels, weekday_labels`; `COLORING_MODE liquid|stops|solid|gradual`; `STOPS a, b, c`; `SQUARED_CELLS` / `ROUNDED_CELLS`; `START_DATE YYYY-MM-DD`; `WEEKS n`; `CELL_SIZE n`; `UNIT WORD|CHAR`; `CENTER` (horizontally center the heatmap in the note).
 
-#### Data Slots (`ktr-slots`)
+#### Data Slots (`wb-slots`)
 
 One slot per line: `TARGET`, `TARGET, UNIT`, or `TARGET, UNIT, CALC`.
 
 ````
-```ktr-slots
+```wb-slots
 CURRENT_WEEK, WORD
 CURRENT_DAY, CHAR
 CURRENT_STREAK
@@ -140,12 +130,12 @@ CURRENT_MONTH, WORD, AVG
 ```
 ````
 
-#### Daily Entries (`ktr-entries`)
+#### Daily Entries (`wb-entries`)
 
 An optional date (`YYYY-MM-DD`, defaults to today) plus optional path filters:
 
 ````
-```ktr-entries
+```wb-entries
 filePath includes "journal"
 2026-08-01
 ```
@@ -167,25 +157,16 @@ filePath includes "journal"
 
 ## Storage and Privacy
 
-All data stays **local** — nothing is sent to external servers. Settings live in the plugin's `data.json` (Obsidian-managed); writing stats live in a separate JSON file (default `stats.json`, changeable to any vault-relative path under **Settings → Data Storage**).
+All data stays **local** — nothing is sent to external servers. Settings live in the plugin's `data.json` (Obsidian-managed); writing stats live in a separate JSON file (default `wordbeat-data.json` inside the plugin folder, changeable to any vault-relative path under **Settings → Data Storage**).
 
-- **Dictionary encoding**: file paths are stored once as small integer IDs, activity is aggregated per day, and files that are only opened (never written) produce no row. Measured against upstream's `data.json` for a normal user (500-file vault, ~12 files opened and 6 written per day, 500 words/day), the stats file is ~85% smaller after 30 days, ~92% after a year and ~94% after three years. Upstream keeps a permanent starting-count + 5-minute-delta row for every file click, so roughly a third of its history is empty, never-written files.
+- **Dictionary encoding**: file paths are stored once as small integer IDs and activity is aggregated per day, so files that are only opened (never written) produce no row. The stats file stays compact even after years of daily use.
 - **Live deltas**: today's value per file is `current count − count when first touched today`, so it can go negative when a file shrinks. Negative rows are kept and can be corrected.
-- **Multi-device**: when the stats file changes behind the plugin's back (Obsidian Sync, Git, etc.), it is detected via mtime and merged row-by-row; the larger value wins. An empty external file never overwrites local data.
-- **Backups**: once per calendar day a raw copy is written to the backup folder (default `.keep-the-rhythm2`), keeping the newest 7 days. If the stats file is missing or emptied, the newest non-empty backup is restored automatically.
+- **Multi-device**: when the stats file changes behind the plugin's back (Obsidian Sync, Git, Nutstore, etc.), it is detected via mtime and merged row-by-row; the larger value wins. An empty external file never overwrites local data.
+- **Backups**: once per calendar day a raw copy is written to the backup folder (default `.wordbeat`), keeping the newest 7 days. If the stats file is missing or emptied, the newest non-empty backup is restored automatically.
 
 ## Support
 
-If you encounter any issues or have suggestions:
+If you encounter issues or have suggestions:
 
 1. Check the GitHub Issues to see if your issue has already been reported.
 2. Create a new issue with as much detail as possible.
-
-## FAQ
-
-#### Why is there a separate version (Keep the Rhythm2)?
-
-This fork reworks upstream to address two limitations:
-
-- **Performance** — as history grows, a flat array of fine-grained rows becomes slow to reprocess. This fork uses a Zustand reactive store and dictionary-encoded, per-day aggregates with cache-friendly lookups.
-- **Storage efficiency** — upstream duplicates file paths, stores per-5-minute deltas, and keeps a permanent record for every file click (even files never written to). This fork removes all three, cutting the stats file by ~85% after 30 days and ~92–94% after a year or more of normal use.

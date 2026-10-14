@@ -69,9 +69,9 @@ export async function mergeExternalStats(
 		);
 		if (extRowCount === 0 && Object.keys(cur.days).length > 0) {
 			console.warn(
-				"KTR: external stats file has no activity rows — keeping local data.",
+				"WordBeat: external stats file has no activity rows — keeping local data.",
 			);
-			new Notice("Ktr: external stats file looked empty — local data kept.");
+			new Notice("WordBeat: external stats file looked empty — local data kept.");
 			return;
 		}
 
@@ -168,7 +168,7 @@ export async function mergeExternalStats(
 		useStore.getState().requestPersist();
 	} catch (error) {
 		console.error("Error in mergeExternalStats:", error);
-		new Notice("Ktr: failed to sync external stats file changes.");
+		new Notice("WordBeat: failed to sync external stats file changes.");
 	}
 }
 

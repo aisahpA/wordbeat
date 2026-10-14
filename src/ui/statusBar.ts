@@ -23,7 +23,7 @@ export class TodayWordsStatusBar {
 
 	constructor(plugin: Plugin) {
 		this.itemEl = plugin.addStatusBarItem();
-		this.itemEl.addClass("ktr-status-bar");
+		this.itemEl.addClass("wb-status-bar");
 		this.itemEl.onclick = () => void activateSidebarView();
 
 		this.unsubs.push(

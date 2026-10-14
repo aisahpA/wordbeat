@@ -263,7 +263,7 @@ export const Heatmap = ({
 				<div className="heatmap-container">
 					{!isCodeBlock && (
 						<button
-							className="KTR-min-button heatmap-unit-toggle"
+							className="wb-min-button heatmap-unit-toggle"
 							aria-label={t("heatmap.changeUnit")}
 							ref={(el) => {
 								if (el && !el.dataset.iconSet) {

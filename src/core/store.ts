@@ -68,7 +68,7 @@ import { decodeActivities } from "./statsCodec";
  *   • plugin reference  — see pluginRegistry.ts (service locator)
  *   • isUpdatingActivity — module-level var in events.ts (internal guard)
  */
-export interface KTRState {
+export interface WordBeatState {
 	// ─── Core state ───
 	today: string;
 	settings: Settings;
@@ -120,7 +120,7 @@ export interface KTRState {
 let persistRafScheduled = false;
 let pendingPersist = false;
 
-export const useStore = create<KTRState>()(
+export const useStore = create<WordBeatState>()(
 	subscribeWithSelector((set, get) => ({
 		today: getToday(),
 		settings: DEFAULT_SETTINGS,

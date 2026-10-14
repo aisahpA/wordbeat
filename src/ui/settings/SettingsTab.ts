@@ -422,7 +422,7 @@ export class SettingsTab extends PluginSettingTab {
             control: {
               type: "text",
               key: "backupConfig.folderPath",
-              placeholder: ".keep-the-rhythm2",
+              placeholder: ".wordbeat",
             },
           },
           {
@@ -498,7 +498,7 @@ class StatsFileModal extends Modal {
 
     const input = contentEl.createEl("input", {
       type: "text",
-      cls: "ktr__stats-file-input",
+      cls: "wb__stats-file-input",
     });
     input.placeholder = defaultStatsFilePath(this.plugin);
     input.value = useStore.getState().settings.statsFileName || "";
@@ -519,7 +519,7 @@ class StatsFileModal extends Modal {
       if (ev.key === "Enter") void submit();
     });
 
-    const pickers = contentEl.createDiv({ cls: "ktr__stats-file-row" });
+    const pickers = contentEl.createDiv({ cls: "wb__stats-file-row" });
     pickers
       .createEl("button", { text: t("settings.statsFile.pickFolder") })
       .addEventListener("click", () => {
@@ -548,7 +548,7 @@ class StatsFileModal extends Modal {
       });
 
     const actions = contentEl.createDiv({
-      cls: "ktr__stats-file-row is-actions",
+      cls: "wb__stats-file-row is-actions",
     });
     actions
       .createEl("button", { text: t("settings.statsFile.modal.cancel") })

@@ -36,27 +36,27 @@
 
 // MODAL
 
-.KTR__modal-buttons {
+.wb__modal-buttons {
 	display: flex;
 	gap: 8px;
 }
 
-.KTR__modal p {
+.wb__modal p {
 	margin-top: 12px;
 	margin-bottom: 12px;
 }
 
-.KTR__modal .modal .modal-header {
+.wb__modal .modal .modal-header {
 	margin: 0;
 }
 
-.ktr-language-picker-list {
+.wb-language-picker-list {
 	max-height: 50vh;
 	overflow-y: auto;
 	margin: 8px 0;
 }
 
-.KTR__file-to-delete {
+.wb__file-to-delete {
 	font-weight: var(--bold-weight);
 	color: var(--text-error);
 	padding: 4px 8px;

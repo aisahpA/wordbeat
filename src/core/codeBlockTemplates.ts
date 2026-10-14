@@ -4,7 +4,7 @@ export function getCustomCodeBlockTemplate(type: CustomCodeBlockType): string {
 	switch (type) {
 		case "heatmap":
 			return [
-				"```ktr-heatmap",
+				"```wb-heatmap",
 				'filePath starts_with "journal"',
 				"",
 				"OPTIONS",
@@ -18,7 +18,7 @@ export function getCustomCodeBlockTemplate(type: CustomCodeBlockType): string {
 			].join("\n");
 		case "slots":
 			return [
-				"```ktr-slots",
+				"```wb-slots",
 				"CURRENT_WEEK, WORDS",
 				"CURRENT_DAY, CHARS",
 				"CURRENT_STREAK",
@@ -26,9 +26,9 @@ export function getCustomCodeBlockTemplate(type: CustomCodeBlockType): string {
 				"```",
 			].join("\n");
 		case "entries":
-			return ["```ktr-entries", "2024-03-15", "```"].join("\n");
+			return ["```wb-entries", "2024-03-15", "```"].join("\n");
 		default:
-			return "```ktr-entries\n2024-03-15\n```";
+			return "```wb-entries\n2024-03-15\n```";
 	}
 }
 

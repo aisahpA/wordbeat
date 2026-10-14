@@ -14,7 +14,7 @@ const STATS_DEBOUNCE_TIME = 2000;
 
 /** Default stats file location: next to data.json in the plugin folder. */
 export function defaultStatsFilePath(plugin: Plugin): string {
-	return `${plugin.manifest.dir}/stats.json`;
+	return `${plugin.manifest.dir}/wordbeat-data.json`;
 }
 
 /**
@@ -93,7 +93,7 @@ export async function readStatsFile(
 		lastStatsMtime = await statsFileMtime(plugin, path);
 		return parsed;
 	} catch (err) {
-		console.error("KTR: can't read stats data file:", err);
+		console.error("WordBeat: can't read stats data file:", err);
 		return null;
 	}
 }
@@ -109,7 +109,7 @@ export async function saveStatsToDisk(plugin: Plugin): Promise<void> {
 		// vault must never observe a half-written, unparseable stats file.
 		await writeFileAtomic(plugin.app.vault.adapter, path, JSON.stringify(data));
 	} catch (err) {
-		console.error("KTR: can't write stats data file:", err);
+		console.error("WordBeat: can't write stats data file:", err);
 		new Notice(t("persistence.writeFailed"));
 		return;
 	}
@@ -223,7 +223,7 @@ export async function switchStatsFile(
 			try {
 				parsed = JSON.parse(await adapter.read(target));
 			} catch (err) {
-				console.error("KTR: can't adopt existing data file:", err);
+				console.error("WordBeat: can't adopt existing data file:", err);
 				new Notice(t("persistence.unreadableTarget"));
 				return false;
 			}
@@ -241,7 +241,7 @@ export async function switchStatsFile(
 		}
 		lastStatsMtime = await statsFileMtime(plugin, target);
 	} catch (err) {
-		console.error("KTR: can't switch data file location:", err);
+		console.error("WordBeat: can't switch data file location:", err);
 		new Notice(t("persistence.switchFailed"));
 		return false;
 	}

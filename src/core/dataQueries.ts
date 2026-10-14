@@ -5,7 +5,7 @@ import {
 	CalculationType,
 	Unit,
 } from "@/defs/types";
-import { useStore, KTRState } from "./store";
+import { useStore, WordBeatState } from "./store";
 import {
 	dayDiff,
 	formatDate,
@@ -20,8 +20,8 @@ import { getPlugin } from "@/core/pluginRegistry";
 import { TFile } from "obsidian";
 
 /** Version selectors for React components to subscribe to. */
-export const selectTodayVersion = (s: KTRState) => s.todayVersion;
-export const selectHistoricalVersion = (s: KTRState) => s.historicalVersion;
+export const selectTodayVersion = (s: WordBeatState) => s.todayVersion;
+export const selectHistoricalVersion = (s: WordBeatState) => s.historicalVersion;
 
 /** Pick the words or chars counter from a counts object based on the unit. */
 export function countByUnit(counts: { w: number; c: number }, unit: Unit): number {

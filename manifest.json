@@ -1,9 +1,9 @@
 {
-	"id": "keep-the-rhythm2",
-	"name": "Keep the Rhythm2",
+	"id": "wordbeat",
+	"name": "WordBeat",
 	"version": "1.0.2",
 	"minAppVersion": "1.13.1",
-	"description": "Visualize and track your writing habit!",
+	"description": "Track your daily writing with a heatmap, goals and streaks.",
 	"author": "aisahpA",
 	"isDesktopOnly": false
 }

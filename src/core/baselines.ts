@@ -133,7 +133,7 @@ export function computeLiveDelta(
 	const baseline = getBaseline(filePath);
 	if (baseline === undefined) {
 		console.warn(
-			`KTR: no today baseline for "${filePath}" — sampling skipped. ` +
+			`WordBeat: no today baseline for "${filePath}" — sampling skipped. ` +
 				"Possible causes: the file was first touched before tracking " +
 				"was enabled, an external sync dropped today's baselines, or " +
 				"the editor already contained text when the plugin loaded.",

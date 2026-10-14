@@ -17,7 +17,7 @@ export function UnitLabel({ unit }: { unit: Unit }) {
 	if (display === UnitDisplay.ICON) {
 		return (
 			<span
-				className="KTR-unit-icon"
+				className="wb-unit-icon"
 				ref={(el) => {
 					if (!el || el.dataset.icon === icon) return;
 					setIcon(el, icon || "type");

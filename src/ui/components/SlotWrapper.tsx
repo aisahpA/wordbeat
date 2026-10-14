@@ -113,7 +113,7 @@ export const SlotWrapper = ({ slots: slotsProp, isCodeBlock }: SlotWrapperProps)
       </TransitionGroup>
       {!isCodeBlock && (
         <button
-          className="KTR-add-slot-button"
+          className="wb-add-slot-button"
           onClick={handleAddClick}
           disabled={
             slotsWithUuid && slotsWithUuid.length >= 10 ? true : false

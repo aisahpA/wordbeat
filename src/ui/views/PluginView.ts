@@ -1,16 +1,16 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import KeepTheRhythm from "../../main";
+import WordBeat from "../../main";
 import * as React from "react";
 import { createRoot, Root } from "react-dom/client";
-import { KTRView } from "../components/SidebarView";
+import { WordBeatView } from "../components/SidebarView";
 
-export const VIEW_TYPE = "keep-the-rhythm2";
+export const VIEW_TYPE = "wordbeat";
 
 export class PluginView extends ItemView {
-	plugin: KeepTheRhythm;
+	plugin: WordBeat;
 	root: Root | null = null;
 
-	constructor(leaf: WorkspaceLeaf, plugin: KeepTheRhythm) {
+	constructor(leaf: WorkspaceLeaf, plugin: WordBeat) {
 		super(leaf);
 		this.plugin = plugin;
 	}
@@ -20,7 +20,7 @@ export class PluginView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Keep the rhythm2";
+		return "WordBeat";
 	}
 
 	getIcon(): string {
@@ -33,9 +33,9 @@ export class PluginView extends ItemView {
 		const reactContainer = container.createDiv();
 		this.root = createRoot(reactContainer);
 
-		// KTRView reads everything it needs from the Zustand store, so no
+		// WordBeatView reads everything it needs from the Zustand store, so no
 		// plugin prop is required.
-		this.root.render(React.createElement(KTRView));
+		this.root.render(React.createElement(WordBeatView));
 	}
 
 	async onClose() {

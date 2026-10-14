@@ -125,7 +125,7 @@ async function runPendingEditorChange(
 			cur.upsertAdded(cur.today, filePath, delta);
 		}
 	} catch (error) {
-		console.error("KTR failed sampling", filePath, error);
+		console.error("WordBeat: sampling failed", filePath, error);
 	}
 }
 
@@ -166,7 +166,7 @@ function confirmDelete(filePath: string) {
 		if (getPlugin().app.vault.getAbstractFileByPath(filePath)) return;
 		st.deleteActivity(st.today, filePath);
 	} catch (error) {
-		console.error("KTR failed deleting", filePath, error);
+		console.error("WordBeat: delete handling failed", filePath, error);
 	}
 }
 
@@ -190,6 +190,6 @@ export function handleFileRename(file: TFile, oldPath: string) {
 	try {
 		store().renameFilePath(oldPath, file.path);
 	} catch (error) {
-		console.error("KTR failed renaming", file.path, error);
+		console.error("WordBeat: rename handling failed", file.path, error);
 	}
 }
