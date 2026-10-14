@@ -1,6 +1,6 @@
 {
   "name": "wordbeat",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "description": "Track your daily writing with a heatmap, goals and streaks.",
   "main": "dist/main.js",
   "type": "module",
