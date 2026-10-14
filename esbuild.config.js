@@ -11,29 +11,35 @@ if you want to view the source, please visit the github repository of this plugi
 const prod = process.argv.includes("production");
 const watch = process.argv.includes("--watch");
 
+const outdir = "dist";
+
+// Obsidian loads plugins via manifest.json next to main.js, so copy the
+// source manifest into the output dir after every (re)build, including watch.
+const copyManifestPlugin = {
+  name: "copy-manifest",
+  setup(build) {
+    build.onEnd(() => {
+      fs.mkdirSync(outdir, { recursive: true });
+      fs.copyFileSync("manifest.json", `${outdir}/manifest.json`);
+    });
+  },
+};
+
 const context = await esbuild.context({
-  metafile: true,
   bundle: true,
   banner: {
     js: banner,
   },
   entryPoints: ["src/main.ts", "src/ui/styles/styles.scss"],
   entryNames: "[name]",
-  outdir: ".",
+  outdir,
   external: [
     "obsidian",
     "electron",
-    "@codemirror/autocomplete",
-    "@codemirror/collab",
-    "@codemirror/commands",
-    "@codemirror/language",
-    "@codemirror/lint",
-    "@codemirror/search",
-    "@codemirror/state",
-    "@codemirror/view",
-    "@lezer/common",
-    "@lezer/highlight",
-    "@lezer/lr",
+    // Obsidian provides CodeMirror 6 and Lezer at runtime. Bundling our own
+    // copies would duplicate their singletons and break instanceof checks.
+    "@codemirror/*",
+    "@lezer/*",
     ...builtinModules,
   ],
   format: "cjs",
@@ -54,13 +60,12 @@ const context = await esbuild.context({
       type: "css",
       style: "compressed",
     }),
+    copyManifestPlugin,
   ],
 });
 
 if (prod) {
-  const result = await context.rebuild();
-
-  fs.writeFileSync("meta.json", JSON.stringify(result.metafile, null, 2));
+  await context.rebuild();
   process.exit(0);
 } else if (watch) {
   await context.watch(); // Watch for file changes in dev mode (npm run dev)

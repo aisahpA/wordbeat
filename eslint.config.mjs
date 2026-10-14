@@ -9,7 +9,6 @@ export default defineConfig(
 		'esbuild.config.js',
 		'version-bump.mjs',
 		'versions.json',
-		'main.js',
 		'package.json',
 		'package-lock.json',
 		'tsconfig.json',

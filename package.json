@@ -2,7 +2,7 @@
   "name": "wordbeat",
   "version": "1.0.2",
   "description": "Track your daily writing with a heatmap, goals and streaks.",
-  "main": "main.js",
+  "main": "dist/main.js",
   "type": "module",
   "scripts": {
     "dev": "node esbuild.config.js --watch",

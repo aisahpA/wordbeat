@@ -11,10 +11,7 @@
 node_modules
 
 # build
-main.js
-*.js.map
-meta.json
-styles.css
+dist/
 data.json
 
 # local config

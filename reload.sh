@@ -12,8 +12,9 @@ set -euo pipefail
 # ------------------------------------------------------------------
 VAULT_DIR="${VAULT_DIR:-}"
 
-# Project directory = directory of this script (build output goes to "." per rollup config)
+# Project directory = directory of this script (build output goes to ./dist)
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIST_DIR="$PROJECT_DIR/dist"
 
 # Local (git-ignored) config: reload.local.sh may set VAULT_DIR etc.
 if [ -f "$PROJECT_DIR/reload.local.sh" ]; then
@@ -46,7 +47,7 @@ fi
 
 echo "→ Building plugin ($PLUGIN_ID, mode=$BUILD_MODE) ..."
 if [ "$BUILD_MODE" = "dev" ]; then
-  npx rollup --config rollup.config.mjs
+  node esbuild.config.js
 else
   npm run build
 fi
@@ -54,8 +55,8 @@ fi
 echo "→ Copying build outputs to $PLUGIN_DIR ..."
 mkdir -p "$PLUGIN_DIR"
 for f in main.js manifest.json styles.css; do
-  if [ -f "$PROJECT_DIR/$f" ]; then
-    cp "$PROJECT_DIR/$f" "$PLUGIN_DIR/$f"
+  if [ -f "$DIST_DIR/$f" ]; then
+    cp "$DIST_DIR/$f" "$PLUGIN_DIR/$f"
   fi
 done
 
