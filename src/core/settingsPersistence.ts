@@ -51,7 +51,7 @@ export async function saveSettingsToDisk(plugin: Plugin): Promise<void> {
 		} satisfies PluginData);
 	} catch (err) {
 		console.error("WordBeat: can't write data.json:", err);
-		new Notice(t("persistence.writeFailed"));
+		new Notice(t("persistence.writeFailed"), 0);
 	}
 }
 

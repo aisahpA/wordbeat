@@ -18,7 +18,7 @@ function getBackupFolder(settings?: Settings): string {
  * retained copy is always the state captured at the FIRST open of the
  * day, i.e. taken before any in-session reset could overwrite it.  The
  * file is read raw (no parse), so even an unparseable stats file lands in
- * the backup — but a structurally wiped one (valid JSON, no `days`,
+ * the backup — but a structurally wiped one (valid JSON, no activity rows,
  * i.e. a transient sync state) is skipped so it can't waste today's backup
  * slot.  Settings (data.json) are not snapshotted — Obsidian manages that
  * file and backup copies of it go stale.
@@ -43,7 +43,7 @@ export async function snapshotRawDataFile(
 		const raw = await app.vault.adapter.read(dataPath);
 		try {
 			const parsed = JSON.parse(raw) as StatsFileData;
-			if (parsed?.stats?.days == null) return;
+			if (!hasActivityRows(parsed)) return;
 		} catch {
 			// Unparseable — back up the raw bytes so nothing is lost.
 		}
@@ -63,10 +63,14 @@ export async function snapshotRawDataFile(
 
 /**
  * Load the stats data:
- *   - File present and valid → use it.
- *   - File present but structurally wiped / unparseable → transient sync
- *     state or corruption: fall back to the newest non-empty backup
- *     IMMEDIATELY (same invariant mergeExternalStats enforces at runtime).
+ *   - File present and valid with at least one activity row → use it.
+ *   - File present but structurally wiped (missing `days`, OR `days` present
+ *     but empty) / unparseable → transient sync state or corruption: fall
+ *     back to the newest non-empty backup IMMEDIATELY (same invariant
+ *     mergeExternalStats enforces at runtime: an empty row set is not a
+ *     deletion manifest).  This guard runs BEFORE hydrate, whose replace
+ *     semantics would otherwise start the session empty and write the wipe
+ *     back on the first persist.
  *   - File MISSING → do nothing.  It is either a genuine first run or a
  *     sync client that hasn't delivered the (custom-path) file yet; the
  *     runtime mtime poll in statsPersistence picks the real file up the
@@ -81,15 +85,21 @@ export async function loadStatsData(
 	const statsPath = getStatsFilePath(plugin, settings);
 	const filePresent = await plugin.app.vault.adapter.exists(statsPath);
 	const statsData = await readStatsFile(plugin, settings);
-	if (statsData?.stats?.days != null) return statsData;
+	if (hasActivityRows(statsData)) return statsData;
 
 	if (!filePresent) return null;
 
 	const restored = await newestBackupStats(plugin.app, settings);
 	if (!restored) return statsData;
-	console.warn("WordBeat: stats file was empty — restored from backup");
-	new Notice("WordBeat: stats file was empty — restored from backup.", 0);
+	console.warn("WordBeat: stats file had no rows — restored from backup");
+	new Notice("WordBeat: stats file had no rows — restored from backup.", 0);
 	return restored;
+}
+
+/** True when the parsed stats file carries at least one activity row. */
+function hasActivityRows(data: StatsFileData | null): boolean {
+	const days = data?.stats?.days;
+	return days != null && Object.keys(days).length > 0;
 }
 
 /** Newest backup whose stats carry activity rows, or null. */

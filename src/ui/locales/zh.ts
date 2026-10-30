@@ -144,6 +144,10 @@ export const zh: En = {
 
 	// Persistence notices
 	"persistence.writeFailed": "WordBeat：写入统计数据文件失败，详见控制台。",
+	"persistence.readFailed":
+		"WordBeat：读取统计数据文件失败，损坏的文件已保留为 {0}。",
+	"persistence.readFailedUnpreserved":
+		"WordBeat：读取统计数据文件失败，且无法保留副本，详见控制台。",
 	"persistence.invalidPath":
 		"WordBeat：数据文件路径无效，请使用库内相对路径且以 .json 结尾。",
 	"persistence.unreadableTarget": "WordBeat：目标路径已存在的文件无法读取。",

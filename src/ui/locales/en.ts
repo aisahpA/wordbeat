@@ -152,6 +152,10 @@ export const en = {
 	// Persistence notices
 	"persistence.writeFailed":
 		"WordBeat: failed to write the stats data file — see console.",
+	"persistence.readFailed":
+		"WordBeat: failed to read the stats data file — the damaged file was kept as {0}.",
+	"persistence.readFailedUnpreserved":
+		"WordBeat: failed to read the stats data file, and a copy could not be kept — see console.",
 	"persistence.invalidPath":
 		"WordBeat: invalid data file path — use a vault-relative .json path.",
 	"persistence.unreadableTarget":

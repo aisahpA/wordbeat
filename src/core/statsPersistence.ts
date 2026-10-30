@@ -74,11 +74,72 @@ export async function cacheStatsFileMtime(
 	lastStatsMtime = await statsFileMtime(plugin, path);
 }
 
+// ─── Corrupted-file quarantine ───
+
+/** `YYYYMMDD-HHmmss` local stamp — unique enough for sibling quarantine names. */
+function quarantineStamp(): string {
+	const d = new Date();
+	const p = (n: number) => String(n).padStart(2, "0");
+	return (
+		`${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}` +
+		`-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
+	);
+}
+
+/**
+ * Move an unreadable stats file aside so the next write can't overwrite it
+ * and the user can still recover the raw bytes by hand. The copy lives next
+ * to the data file as `<name>.corrupt-<stamp>.json` (not in the backup
+ * folder: automatic backups may be disabled — exactly the case where this
+ * matters most).
+ *
+ * Moving (rename) is preferred: it also leaves a clean "missing file" state,
+ * so repeated reads stop failing and no suppression flag is needed. Falls
+ * back to copy + remove when the adapter refuses the rename.
+ *
+ * @returns the quarantine path, or null when nothing could be preserved.
+ */
+async function quarantineStatsFile(
+	plugin: Plugin,
+	path: string,
+): Promise<string | null> {
+	const adapter = plugin.app.vault.adapter;
+	const stem = path.endsWith(".json") ? path.slice(0, -5) : path;
+
+	try {
+		let dest = `${stem}.corrupt-${quarantineStamp()}.json`;
+		let suffix = 2;
+		while (await adapter.exists(dest)) {
+			dest = `${stem}.corrupt-${quarantineStamp()}-${suffix++}.json`;
+		}
+
+		try {
+			await adapter.rename(path, dest);
+			return dest;
+		} catch (err) {
+			console.error("WordBeat: can't move corrupted stats file:", err);
+		}
+
+		const raw = await adapter.read(path);
+		await writeFileAtomic(adapter, dest, raw);
+		await adapter.remove(path);
+		return dest;
+	} catch (err) {
+		console.error("WordBeat: can't preserve corrupted stats file:", err);
+		return null;
+	}
+}
+
 // ─── Read / write the stats data file ───
 
 /**
  * Read and parse the stats data file. Returns null when the file is
  * missing or unreadable (the boot guard handles recovery from backups).
+ *
+ * A read/parse failure is not silent: the damaged file is moved aside
+ * (see `quarantineStatsFile`) and a sticky, click-to-dismiss notice reports
+ * where it went — running on stale in-memory data with no backups enabled
+ * is exactly the situation where the raw file is the only thing left.
  */
 export async function readStatsFile(
 	plugin: Plugin,
@@ -94,6 +155,18 @@ export async function readStatsFile(
 		return parsed;
 	} catch (err) {
 		console.error("WordBeat: can't read stats data file:", err);
+		// Preserve the damaged bytes BEFORE returning: the caller may start
+		// with empty data and the next debounced write would overwrite them.
+		// Moving the file also makes every later read a clean "missing file"
+		// no-op, so this runs once per damaged file without any flag.
+		const savedTo = await quarantineStatsFile(plugin, path);
+		// 0 = the notice stays until the user closes it.
+		new Notice(
+			savedTo
+				? t("persistence.readFailed", savedTo)
+				: t("persistence.readFailedUnpreserved"),
+			0,
+		);
 		return null;
 	}
 }
@@ -110,7 +183,7 @@ export async function saveStatsToDisk(plugin: Plugin): Promise<void> {
 		await writeFileAtomic(plugin.app.vault.adapter, path, JSON.stringify(data));
 	} catch (err) {
 		console.error("WordBeat: can't write stats data file:", err);
-		new Notice(t("persistence.writeFailed"));
+		new Notice(t("persistence.writeFailed"), 0);
 		return;
 	}
 	lastStatsMtime = await statsFileMtime(plugin, path);
