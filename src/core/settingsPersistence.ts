@@ -78,8 +78,9 @@ export async function mergeIncomingSettings(
 export interface SettingsScheduler {
 	dispose: () => void;
 	/** Flush a pending settings save immediately; no-op when settings are
-	 *  clean, so lifecycle flushes (pagehide / unload) never rewrite
-	 *  data.json in typing-only sessions. */
+	 *  clean, so the unload flush never rewrites data.json in typing-only
+	 *  sessions.  Deliberately not wired to background events — see
+	 *  main.ts registerLifecycleEvents. */
 	flushNow: () => Promise<void>;
 }
 

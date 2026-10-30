@@ -81,15 +81,24 @@ export default class WordBeat extends Plugin {
 	}
 
 	/**
-	 * Wake/suspend lifecycle wiring, registered via registerDomEvent /
+	 * Wake lifecycle wiring, registered via registerDomEvent /
 	 * registerInterval so unload cleanup is automatic.
 	 *
 	 * "Wake" (focus, becoming visible again) re-runs the day-rollover and
 	 * external-stats checks — the fallback for mobile, where window focus
-	 * may never fire on resume but visibilitychange does.
+	 * may never fire on resume but visibilitychange does.  This half is
+	 * load-bearing: checkDayChange has no other caller, so a session left
+	 * open overnight would otherwise keep writing to yesterday's date.
 	 *
-	 * "Suspend" (pagehide, becoming hidden) force-drains pending edits
-	 * because requestAnimationFrame is paused in background tabs.
+	 * "Suspend" deliberately has NO writer.  A flush on pagehide /
+	 * visibilitychange lands exactly on the OS freeze boundary, where mobile
+	 * may suspend the webview or kill the process mid-write — and the
+	 * settings channel's saveData is a non-atomic truncate-rewrite, so a
+	 * half-written data.json would read back as "no settings".  Dropping it
+	 * costs almost nothing: while hidden, requestPersist's rAF is paused, so
+	 * the debounced save never even schedules — the only state at risk is
+	 * the last sample/debounce window (≲3s) when the process is killed
+	 * outright.
 	 *
 	 * The 5s sweep (pattern borrowed from position-restore's db flush) is
 	 * the external-stats pickup for every path and window state — idle or
@@ -101,13 +110,10 @@ export default class WordBeat extends Plugin {
 			useStore.getState().checkDayChange();
 			void checkExternalStatsFile(this);
 		};
-		const onSuspend = () => void this.flushNow();
 
 		this.registerDomEvent(window, "focus", onWake);
-		this.registerDomEvent(window, "pagehide", onSuspend);
 		this.registerDomEvent(document, "visibilitychange", () => {
-			if (document.hidden) onSuspend();
-			else onWake();
+			if (!document.hidden) onWake();
 		});
 		this.registerInterval(
 			window.setInterval(() => void checkExternalStatsFile(this), 5000),
@@ -118,11 +124,11 @@ export default class WordBeat extends Plugin {
 	 * Drain any pending editor-change sample into the in-memory store
 	 * and immediately flush both save channels (stats → stats file,
 	 * settings → data.json; the settings flush is a no-op when no
-	 * settings change is pending).  Used by the
-	 * visibilitychange / pagehide handlers (because requestAnimationFrame
-	 * is paused in background tabs) and during plugin unload so a
-	 * coalesced debounced save still lands on disk before the schedulers
-	 * are disposed.
+	 * settings change is pending).  Used on plugin unload, so a coalesced
+	 * debounced save still lands on disk before the schedulers are
+	 * disposed.  Deliberately NOT wired to pagehide / visibilitychange —
+	 * that write would sit on the OS freeze boundary (see
+	 * registerLifecycleEvents).
 	 */
 	private async flushNow() {
 		await events.flushPendingEditorChange();

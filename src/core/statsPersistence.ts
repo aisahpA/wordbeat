@@ -337,10 +337,11 @@ export interface StatsScheduler {
 	dispose: () => void;
 	/**
 	 * Cancel any pending debounced save and write pending stats to disk
-	 * immediately.  Used by visibilitychange / pagehide handlers because
-	 * requestAnimationFrame is paused in background tabs — without an
-	 * explicit flush, a user who types and then switches apps can lose
-	 * their last few edits to an OS kill or hard reload.
+	 * immediately.  Used on plugin unload — a coalesced debounced save must
+	 * land before the scheduler is disposed.  Deliberately NOT wired to
+	 * pagehide / visibilitychange: that write would land on the OS freeze
+	 * boundary, where a mobile process can be suspended mid-write (see
+	 * main.ts registerLifecycleEvents).
 	 */
 	flushNow: () => Promise<void>;
 }
