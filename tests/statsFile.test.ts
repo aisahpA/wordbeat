@@ -40,6 +40,18 @@ class FakeAdapter {
 		this.files.delete(p);
 		this.mtimes.delete(p);
 	}
+	/** Obsidian refuses to overwrite an existing destination — the real
+	 *  adapter throws "Destination file already exists!", which is why the
+	 *  staged write moves the live file aside before renaming. */
+	async rename(from: string, to: string): Promise<void> {
+		const data = this.files.get(from);
+		if (data === undefined) throw new Error("missing " + from);
+		if (this.files.has(to)) throw new Error("Destination file already exists!");
+		this.files.set(to, data);
+		this.files.delete(from);
+		this.mtimes.set(to, this.clock++);
+		this.mtimes.delete(from);
+	}
 	async mkdir(p: string): Promise<void> {
 		this.folders.add(p);
 	}

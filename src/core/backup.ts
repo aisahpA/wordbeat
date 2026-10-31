@@ -1,7 +1,7 @@
 import { Notice, App, Plugin } from "obsidian";
 import { Settings, StatsFileData } from "@/defs/types";
 import { formatDate } from "@/utils/dateUtils";
-import { writeFileAtomic } from "@/utils/utils";
+import { writeFileSwap } from "@/utils/atomicFile";
 import { getStatsFilePath, readStatsFile } from "./statsPersistence";
 
 const DEFAULT_BACKUP_DAYS = 7;
@@ -51,7 +51,9 @@ export async function snapshotRawDataFile(
 		if (!(await app.vault.adapter.exists(folderPath))) {
 			await app.vault.adapter.mkdir(folderPath);
 		}
-		await writeFileAtomic(app.vault.adapter, backupPath, raw);
+		// Snapshot targets are unique per day and never overwritten, so the
+		// single-swap variant is enough (no .prev slot to clean up).
+		await writeFileSwap(app.vault.adapter, backupPath, raw);
 		new Notice("WordBeat: New backup saved.");
 	} catch (err) {
 		console.error("WordBeat: error trying to create backup: ", err);

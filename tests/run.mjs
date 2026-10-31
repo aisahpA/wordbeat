@@ -7,6 +7,7 @@ const tests = [
 	"tests/statsFile.test.ts",
 	"tests/events.test.ts",
 	"tests/rename.test.ts",
+	"tests/atomicWrite.test.ts",
 ];
 
 for (const entry of tests) {

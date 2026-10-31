@@ -1,7 +1,11 @@
 import { Notice, Plugin } from "obsidian";
 
 import { Settings, StatsFileData } from "@/defs/types";
-import { writeFileAtomic } from "@/utils/utils";
+import {
+	clearStaging,
+	recoverFileFromStaging,
+	writeFileStaged,
+} from "@/utils/atomicFile";
 import { useStore } from "./store";
 import { encodePersistedStats } from "./statsCodec";
 import { mergeExternalStats } from "./statsSync";
@@ -121,7 +125,10 @@ async function quarantineStatsFile(
 		}
 
 		const raw = await adapter.read(path);
-		await writeFileAtomic(adapter, dest, raw);
+		// Copy, don't swap: the preserved bytes cannot be staged (a staged write
+		// would move the damaged live file aside first), and a failed write here
+		// leaves the original in place for the next attempt.
+		await adapter.write(dest, raw);
 		await adapter.remove(path);
 		return dest;
 	} catch (err) {
@@ -136,21 +143,27 @@ async function quarantineStatsFile(
  * Read and parse the stats data file. Returns null when the file is
  * missing or unreadable (the boot guard handles recovery from backups).
  *
- * A read/parse failure is not silent: the damaged file is moved aside
- * (see `quarantineStatsFile`) and a sticky, click-to-dismiss notice reports
- * where it went — running on stale in-memory data with no backups enabled
- * is exactly the situation where the raw file is the only thing left.
+ * Two recovery steps come before/after the read:
+ *  - a swap interrupted by a crash or a killed mobile process is finished by
+ *    promoting the staged copy (see `recoverFileFromStaging`);
+ *  - a damaged file is moved aside (see `quarantineStatsFile`) and the
+ *    previous version kept by the staged swap is restored, so a corrupt write
+ *    costs one save tick instead of the whole history.
+ *
+ * Neither path is silent: the damaged copy location is reported in a sticky,
+ * click-to-dismiss notice — running on stale in-memory data with no backups
+ * enabled is exactly the situation where the raw file is the only thing left.
  */
 export async function readStatsFile(
 	plugin: Plugin,
 	settings?: Settings,
 ): Promise<StatsFileData | null> {
 	const path = getStatsFilePath(plugin, settings);
+	const adapter = plugin.app.vault.adapter;
+	await recoverFileFromStaging(adapter, path, { isValid: isStatsText });
 	try {
-		if (!(await plugin.app.vault.adapter.exists(path))) return null;
-		const parsed = JSON.parse(
-			await plugin.app.vault.adapter.read(path),
-		) as StatsFileData;
+		if (!(await adapter.exists(path))) return null;
+		const parsed = JSON.parse(await adapter.read(path)) as StatsFileData;
 		lastStatsMtime = await statsFileMtime(plugin, path);
 		return parsed;
 	} catch (err) {
@@ -160,7 +173,29 @@ export async function readStatsFile(
 		// Moving the file also makes every later read a clean "missing file"
 		// no-op, so this runs once per damaged file without any flag.
 		const savedTo = await quarantineStatsFile(plugin, path);
-		// 0 = the notice stays until the user closes it.
+		// The damaged file is out of the way, so the staged copy is free to
+		// take its place: the previous complete version beats empty data.
+		const restored = await recoverFileFromStaging(adapter, path, {
+			isValid: isStatsText,
+		});
+		if (restored) {
+			try {
+				const parsed = JSON.parse(
+					await adapter.read(path),
+				) as StatsFileData;
+				lastStatsMtime = await statsFileMtime(plugin, path);
+				// 0 = the notice stays until the user closes it.
+				new Notice(
+					savedTo
+						? t("persistence.restoredFromStaging", savedTo)
+						: t("persistence.readFailedUnpreserved"),
+					0,
+				);
+				return parsed;
+			} catch (restoreErr) {
+				console.error("WordBeat: can't read restored stats file:", restoreErr);
+			}
+		}
 		new Notice(
 			savedTo
 				? t("persistence.readFailed", savedTo)
@@ -178,9 +213,17 @@ export async function saveStatsToDisk(plugin: Plugin): Promise<void> {
 	const data = prepareStatsData();
 	const path = getStatsFilePath(plugin);
 	try {
-		// Atomic replace (temp file + rename): a sync client watching the
-		// vault must never observe a half-written, unparseable stats file.
-		await writeFileAtomic(plugin.app.vault.adapter, path, JSON.stringify(data));
+		// Staged replace with a previous-version slot: the live path only ever
+		// points at a complete file, and the staging copies live in
+		// `.trash/wordbeat` where a sync client won't carry a partial write
+		// around (see utils/atomicFile.ts). validate guards the one case the
+		// swap can't recover from: a payload the next read cannot decode.
+		await writeFileStaged(
+			plugin.app.vault.adapter,
+			path,
+			JSON.stringify(data),
+			{ validate: validateStatsText },
+		);
 	} catch (err) {
 		console.error("WordBeat: can't write stats data file:", err);
 		new Notice(t("persistence.writeFailed"), 0);
@@ -258,6 +301,25 @@ function isStatsFileData(value: unknown): value is StatsFileData {
 	return typeof stats === "object" && stats !== null && !Array.isArray(stats);
 }
 
+/** True when `text` parses back as a well-formed stats data file. Used to
+ *  sanity-check staged recovery copies before they take over the live path. */
+function isStatsText(text: string): boolean {
+	try {
+		return isStatsFileData(JSON.parse(text));
+	} catch {
+		return false;
+	}
+}
+
+/** Pre-write guard for `writeFileStaged`: never let a payload the next read
+ *  would reject reach the live path (it would trigger quarantine + a
+ *  previous-version restore on the very next boot). */
+function validateStatsText(text: string): void {
+	if (!isStatsText(text)) {
+		throw new Error("WordBeat: refusing to write an unreadable stats payload");
+	}
+}
+
 /**
  * Move the stats data file to `newPath` (vault-relative, including the
  * file name); an empty path resets to the default location next to
@@ -291,6 +353,10 @@ export async function switchStatsFile(
 
 	try {
 		const adapter = plugin.app.vault.adapter;
+		// A staged copy left by an interrupted switch carries the same data as
+		// the in-memory store, but promoting it first means the "already
+		// exists?" branch below sees the real file instead of a stale slot.
+		await recoverFileFromStaging(adapter, target, { isValid: isStatsText });
 		if (await adapter.exists(target)) {
 			let parsed: unknown;
 			try {
@@ -308,10 +374,14 @@ export async function switchStatsFile(
 		}
 
 		await ensureParentFolder(plugin, target);
-		await writeFileAtomic(adapter, target, JSON.stringify(prepareStatsData()));
+		await writeFileStaged(adapter, target, JSON.stringify(prepareStatsData()), {
+			validate: validateStatsText,
+		});
 		if (await adapter.exists(currentPath)) {
 			await adapter.remove(currentPath);
 		}
+		// The old location's recovery slots would otherwise outlive it forever.
+		await clearStaging(adapter, currentPath);
 		lastStatsMtime = await statsFileMtime(plugin, target);
 	} catch (err) {
 		console.error("WordBeat: can't switch data file location:", err);

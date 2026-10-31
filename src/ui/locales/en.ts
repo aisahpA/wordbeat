@@ -154,6 +154,8 @@ export const en = {
 		"WordBeat: failed to write the stats data file — see console.",
 	"persistence.readFailed":
 		"WordBeat: failed to read the stats data file — the damaged file was kept as {0}.",
+	"persistence.restoredFromStaging":
+		"WordBeat: the stats data file was damaged — the damaged copy was kept as {0} and the previous version was restored.",
 	"persistence.readFailedUnpreserved":
 		"WordBeat: failed to read the stats data file, and a copy could not be kept — see console.",
 	"persistence.invalidPath":

@@ -146,6 +146,8 @@ export const zh: En = {
 	"persistence.writeFailed": "WordBeat：写入统计数据文件失败，详见控制台。",
 	"persistence.readFailed":
 		"WordBeat：读取统计数据文件失败，损坏的文件已保留为 {0}。",
+	"persistence.restoredFromStaging":
+		"WordBeat：统计数据文件已损坏，损坏副本已保留为 {0}，已自动回退到上一版本。",
 	"persistence.readFailedUnpreserved":
 		"WordBeat：读取统计数据文件失败，且无法保留副本，详见控制台。",
 	"persistence.invalidPath":
